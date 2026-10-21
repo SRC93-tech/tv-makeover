@@ -1,0 +1,24 @@
+{
+  "name": "starter",
+  "title": "Starter",
+  "description": "cleanyourtv's stock look plus the branding switches: brand wordmark, boot splash, built-in wallpaper with a blurred variant, UI sounds, header pills, ambient glow, fixed dock position and canvas scaling. Every switch starts off; turn on what you need, or copy this folder to start a new design.",
+  "base": { "repo": "https://github.com/Gathin23/cleanyourtv", "commit": "687b5ee" },
+  "patch": "launcher.patch",
+  "assets": "assets/res",
+  "canvas": { "width_px": 1920, "height_px": 1080, "design_width_dp": 0 },
+  "config": {
+    "brand_name": "",
+    "boot_splash": false,
+    "ambient_glow": true,
+    "header_pills": true,
+    "dock_top_dp": -1,
+    "builtin_wallpaper": false,
+    "ui_sounds": false,
+    "design_width_dp": 0
+  },
+  "licenses": {
+    "code": "MIT (derived from cleanyourtv, (c) 2026 Gathin)",
+    "wallpaper": "Generated with ffmpeg for this repo, MIT",
+    "sounds": "Synthesized with ffmpeg for this repo (skills/android-tv-ui-sounds/scripts/synth_ui_sound.sh), MIT"
+  }
+}

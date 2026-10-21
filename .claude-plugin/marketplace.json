@@ -1,0 +1,11 @@
+{
+  "name": "tv-makeover-skills",
+  "owner": { "name": "tv-makeover" },
+  "plugins": [
+    {
+      "name": "tv-makeover",
+      "source": ".",
+      "description": "Make over any Android TV / Google TV: debloat, Apple-TV-style launcher, custom design from Figma, UI sounds."
+    }
+  ]
+}

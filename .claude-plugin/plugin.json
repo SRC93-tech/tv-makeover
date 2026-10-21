@@ -1,0 +1,15 @@
+{
+  "name": "tv-makeover",
+  "version": "1.0.0",
+  "description": "Make over any Android TV / Google TV with a coding agent: connect over Wi-Fi, diagnose and debloat it, install a fast Apple-TV-style launcher from a template (DreamOS, starter, extreme), implement designs from Figma to the pixel, and add UI sounds. Built on cleanyourtv (MIT).",
+  "keywords": [
+    "android-tv",
+    "google-tv",
+    "launcher",
+    "debloat",
+    "adb",
+    "figma",
+    "ui-sounds"
+  ],
+  "license": "MIT"
+}

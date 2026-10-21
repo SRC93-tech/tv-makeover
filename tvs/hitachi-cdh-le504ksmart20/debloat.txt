@@ -1,0 +1,55 @@
+# Hitachi CDH-LE504KSMART20 (50" 4K, Latin America / Argentina; TCL-built: ro.product.model BeyondTV,
+# client type HIT-LA-RT2851-S1, software V8-R851T02-LF1V715 / AR05), Android TV 11 (API 30),
+# security patch 2021-12-05. Realtek RTD2851 (ro.board.platform rtd285o), 4x Cortex-A55, 2 GB RAM with
+# 600 MB zRAM, 32-bit userspace, 10 GB /data. 1920x1080 UI.
+# Fingerprint: TCL/BeyondTV/BeyondTV:11/PPR1.180610.011/AR05:user/release-keys
+# Same chip and client family as examples/tcl-beyondtv-rt2851 and examples/tcl-beyondtv2-latin-america,
+# but those run Android 9; this one is Android 11.
+#
+# Apply:   TV_HOST=<tv ip> tools/disable.sh examples/hitachi-cdh-le504ksmart20/debloat.txt
+# Undo:    TV_HOST=<tv ip> tools/restore.sh examples/hitachi-cdh-le504ksmart20/debloat.txt
+# Everything is DISABLED, not uninstalled. Comment out any line you want to keep.
+
+# 1. Telemetry
+com.tcl.bi                              # TCL BI analytics
+com.google.android.feedback             # "send feedback"
+com.google.android.partnersetup         # partner-app attribution (76 MB resident after boot)
+android.autoinstalls.config.tcl.device  # Play Auto Install: partner apps pushed after setup
+com.google.android.onetimeinitializer   # one-time setup leftovers
+
+# 2. Content, recommendation rows and promos
+com.google.android.tvrecommendations    # recommendation rows on the stock home
+com.tcl.tv.tclhome_passive              # pushes TCL content to the home at boot (81 MB resident)
+com.tcl.waterfall.overseas              # TCL Channel web-video portal
+com.tcl.messagebox                      # TCL messages/popups
+com.tcl.esticker                        # retail demo / energy-label sticker
+com.tcl.overseasappshow                 # "recommended apps" showcase (boot/network receivers)
+
+# 3. Off by choice on this unit: apps the owner does not use. Comment out what you use.
+com.disney.starplus                     # Star+ (merged into Disney+ in Latin America)
+com.hbo.hbonow                          # old HBO Max app, replaced by Max (com.wbd.stream)
+com.google.android.videos               # Play Movies / Google TV (114 MB resident after boot)
+com.google.android.play.games
+com.google.android.youtube.tvmusic
+tv.twitch.android.app
+com.kick.mobile
+com.valvesoftware.steamlink
+tv.pluto.android                        # Pluto TV (also registers a TV input)
+# Kept by choice: Netflix, YouTube, YouTube Kids, Disney+, Max, Prime Video, Paramount+, Apple TV,
+# Crunchyroll, Spotify, Flow, GalaView, Chromecast (com.google.android.apps.mediashell).
+
+# 4. Voice, off by choice. katniss:interactor used 30-33% of one core all the time, even right after
+#    a reboot with nothing playing (same as examples/tcl-beyondtv-rt2851). The mic button stops working.
+com.google.android.katniss              # Google voice search and the mic button
+com.tcl.assistant                       # TCL's Google Assistant bridge (voice TV/media/settings control)
+com.tcl.micmanager                      # remote microphone manager
+com.google.android.tv.assistant         # Assistant LED service
+com.tcl.smartalexa                      # TCL Alexa bridge
+
+# 5. After launcher/ is installed and Home (com.tcl.guard carries TCL's PackageInstallerService).
+#    Set the launcher's clock as screensaver first:
+#    tools/tv.py 'settings put secure screensaver_components com.gathin.tvhome/.ClockDream'
+#    (restore: com.google.android.backdrop/.Backdrop)
+com.google.android.backdrop             # Ambient screensaver (122 MB resident), replaced by the launcher's clock
+com.tcl.ui_mediaCenter                  # USB media centre (88 MB resident after boot); off by choice, no USB media used
+com.tcl.guard                           # TGuard cleaner/app manager. *PERS* uid 1000: the process still starts at boot

@@ -1,0 +1,15 @@
+{
+  "model": "Hitachi CDH-LE504KSMART20",
+  "built_by": "TCL (BeyondTV platform, client type HIT-LA-RT2851-S1)",
+  "market": "Latin America (Argentina)",
+  "android": { "version": 11, "api": 30, "security_patch": "2021-12-05", "firmware": "V8-R851T02-LF1V715 (AR05)" },
+  "hardware": { "board": "Realtek RTD2851 (rtd285o)", "cpu": "4x Cortex-A55 1.1 GHz", "gpu": "Mali-470 MP, OpenGL ES 2.0", "ram_mb": 2048, "wifi": "2.4 GHz only" },
+  "display": { "ui_px": "1920x1080", "density_dpi": 320, "panel": "3840x2160" },
+  "stock_launcher": "com.google.android.tvlauncher",
+  "debloat_list": "debloat.txt",
+  "launcher": {
+    "live_tv_package": "com.tcl.tv",
+    "hidden_apps": ["com.tcl.tv", "com.tcl.partnercustomizer", "com.android.tv.settings"]
+  },
+  "tested": "2026-10-20 on one unit: debloat, cleanyourtv launcher, DreamOS template, boot splash, UI sounds"
+}

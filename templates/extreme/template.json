@@ -1,0 +1,27 @@
+{
+  "name": "extreme",
+  "title": "Extreme performance",
+  "description": "For very old or weak TVs (1 GB of RAM or less, Mali-400/450-class GPUs, Android 7-9): cleanyourtv's layout with every animation, effect, glow, wallpaper, splash and sound off, so Home costs as little CPU, GPU and memory as possible. Pair it with scripts/extreme-performance.sh for the system side.",
+  "base": { "repo": "https://github.com/Gathin23/cleanyourtv", "commit": "687b5ee" },
+  "patch": "../starter/launcher.patch",
+  "assets": "../starter/assets/res",
+  "canvas": { "width_px": 1920, "height_px": 1080, "design_width_dp": 0 },
+  "config": {
+    "brand_name": "",
+    "boot_splash": false,
+    "builtin_wallpaper": false,
+    "ui_sounds": false,
+    "ambient_glow": false,
+    "header_pills": true,
+    "dock_top_dp": -1,
+    "design_width_dp": 0,
+    "animations": false,
+    "advanced_effects": false,
+    "reduced_motion": true,
+    "cinematic_home": false,
+    "sky_intensity": 0,
+    "show_stats": false,
+    "module_cards": false
+  },
+  "licenses": { "code": "MIT (derived from cleanyourtv, (c) 2026 Gathin)" }
+}

@@ -59,11 +59,11 @@ your Wi-Fi network could connect to the TV.
 
 ## Install for your agent
 
-Clone the repo, then:
+Clone it (`git clone https://github.com/paisanos-io/tv-makeover`), then:
 
 | Agent | How |
 |---|---|
-| Claude Code | `/plugin marketplace add <owner>/<repo>` then `/plugin install tv-makeover@tv-makeover-skills`, or copy `skills/*` into `~/.claude/skills/` |
+| Claude Code | `/plugin marketplace add paisanos-io/tv-makeover` then `/plugin install tv-makeover@tv-makeover-skills`, or copy `skills/*` into `~/.claude/skills/` |
 | Codex | Open the repo folder in Codex (it reads `AGENTS.md`), or copy `skills/*` into `~/.codex/skills/` |
 | Any other agent | Open the repo and point the agent at `AGENTS.md`; the skills are plain `SKILL.md` files |
 

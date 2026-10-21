@@ -1,0 +1,1803 @@
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java b/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
+index 5b9d071..29f3057 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
+@@ -23,7 +23,6 @@ import android.view.View;
+ import android.view.ViewGroup;
+ import android.view.ViewOutlineProvider;
+ import android.view.animation.DecelerateInterpolator;
+-import android.view.animation.OvershootInterpolator;
+ import android.widget.ImageView;
+ import android.widget.TextView;
+ import android.widget.Toast;
+@@ -89,8 +88,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+     }
+ 
+     static final float FOCUS_SCALE = 1.10f;
+-    /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
+-    static final float DESIGN_W_DP = 180f, DESIGN_H_DP = 101f;
++    /**
++     * Design size of a tile (dp): 349x165px on the DreamOS 1080p design. Tiles shrink from here when the columns
++     * don't fit, see tileWidthPx.
++     */
++    static final float DESIGN_W_DP = 174.5f, DESIGN_H_DP = 82.5f;
+ 
+     /**
+      * Tile width for a grid of this inner width: the cell minus room for the focus zoom and the glass
+@@ -100,7 +102,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+         int design = Math.round(DESIGN_W_DP * density);
+         if (innerWidthPx <= 0 || columns <= 0) return design;
+         int cell = innerWidthPx / columns;
+-        int fit = (int) ((cell - 12 * density) / FOCUS_SCALE);
++        // 6dp: with DreamOS's 24dp gaps the design size still fits its cell at the focus zoom.
++        int fit = (int) ((cell - 6 * density) / FOCUS_SCALE);
+         return Math.max(Math.round(80 * density), Math.min(design, fit));
+     }
+ 
+@@ -621,7 +624,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+ 
+     /** Corner radius for a tile of this width: 16dp at the design width, proportionally less when smaller. */
+     static float cornerRadius(int tileWidthPx, float density) {
+-        return 16f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
++        return 12.5f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
+     }
+ 
+     static final class Holder extends RecyclerView.ViewHolder {
+@@ -696,7 +699,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+                             .translationY(focused && advancedEffects ? -4f * density : 0f)
+                             .translationZ(focused && advancedEffects ? 8f * density : 0f)
+                             .setDuration(advancedEffects ? (focused ? 220 : 170) : (focused ? 260 : 180))
+-                            .setInterpolator(new OvershootInterpolator(focused ? (advancedEffects ? 0.7f : 1.6f) : 0f))
++                            // No overshoot: the zoom lands on its size, like the highlight lands on the tile.
++                            .setInterpolator(new DecelerateInterpolator(1.5f))
+                             .withLayer().start();
+                     if (advancedEffects) {
+                         banner.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f)
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/AppLibraryDialog.java b/launcher/app/src/main/java/com/gathin/tvhome/AppLibraryDialog.java
+index 29c5d5b..628a7f6 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/AppLibraryDialog.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/AppLibraryDialog.java
+@@ -426,7 +426,7 @@ final class AppLibraryDialog {
+         view.setText(value);
+         view.setTextSize(size);
+         view.setTextColor(color);
+-        view.setTypeface(activity.getResources().getFont(R.font.outfit_medium));
++        view.setTypeface(activity.getResources().getFont(R.font.inter_tight_medium));
+         view.setLetterSpacing(0.01f);
+         view.setIncludeFontPadding(false);
+         return view;
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/Config.java b/launcher/app/src/main/java/com/gathin/tvhome/Config.java
+index 8f41173..a36699b 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/Config.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/Config.java
+@@ -104,6 +104,20 @@ final class Config {
+     final List<RaceWeekend.Race> raceCalendar;
+     /** Cinematic top shelf (config.xml, cinematic_home): the focused dock app's artwork behind a larger shelf. */
+     final boolean cinematicHome;
++    /** A name above the greeting on Home (config.xml, brand_name); empty for none. */
++    final String brandName;
++    /** brand_name full screen for a moment when the TV is switched on (config.xml, boot_splash). */
++    final boolean bootSplash;
++    /** The glow in the focused dock app's colour behind the shelf (config.xml, ambient_glow). */
++    final boolean ambientGlow;
++    /** The Inputs and Wi-Fi pills in the top bar (config.xml, header_pills); Settings always stays. */
++    final boolean headerPills;
++    /** Where the dock tiles' top edge sits, in dp from the top of the screen (config.xml, dock_top_dp); -1: low. */
++    final int dockTopDp;
++    /** res/drawable-nodpi/home_wallpaper.jpg behind Home when no theme wallpaper is set (builtin_wallpaper). */
++    final boolean builtinWallpaper;
++    /** Startup, focus-move and OK sounds from res/raw (config.xml, ui_sounds). */
++    final boolean uiSounds;
+ 
+     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, String liveTvPackage,
+                    String liveTvAction, Map<String, String> launchActions, Map<String, String> appLabels,
+@@ -114,7 +128,9 @@ final class Config {
+                    int[] settingsKeycodes, boolean settingsKeyPanel, boolean wallpaperEnabled, File wallpaper, List<File> wallpapers,
+                    int wallpaperRotationMinutes, int wallpaperDim, boolean overlayApplied,
+                    Festival festival, int[] inputKeycodes, List<String> appKeys,
+-                   List<RaceWeekend.Race> raceCalendar, boolean cinematicHome) {
++                   List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, String brandName, boolean bootSplash,
++                   boolean ambientGlow, boolean headerPills, int dockTopDp, boolean builtinWallpaper,
++                   boolean uiSounds) {
+         this.inputKeycodes = inputKeycodes;
+         this.appKeys = Collections.unmodifiableList(appKeys);
+         this.dockApps = Collections.unmodifiableList(dockApps);
+@@ -156,6 +172,13 @@ final class Config {
+         this.festival = festival;
+         this.raceCalendar = Collections.unmodifiableList(raceCalendar);
+         this.cinematicHome = cinematicHome;
++        this.brandName = brandName;
++        this.bootSplash = bootSplash;
++        this.ambientGlow = ambientGlow;
++        this.headerPills = headerPills;
++        this.dockTopDp = dockTopDp;
++        this.builtinWallpaper = builtinWallpaper;
++        this.uiSounds = uiSounds;
+     }
+ 
+     /** The folder the theme tools push into; null when external storage is unavailable. */
+@@ -198,6 +221,13 @@ final class Config {
+         int[] inputKeycodes = res.getIntArray(R.array.input_key_keycodes);
+         List<String> appKeys = new ArrayList<>(Arrays.asList(res.getStringArray(R.array.app_keys)));
+         boolean cinematic = res.getBoolean(R.bool.cinematic_home);
++        String brandName = res.getString(R.string.brand_name).trim();
++        boolean bootSplash = res.getBoolean(R.bool.boot_splash);
++        boolean ambientGlow = res.getBoolean(R.bool.ambient_glow);
++        boolean headerPills = res.getBoolean(R.bool.header_pills);
++        int dockTopDp = res.getInteger(R.integer.dock_top_dp);
++        boolean builtinWallpaper = res.getBoolean(R.bool.builtin_wallpaper);
++        boolean uiSounds = res.getBoolean(R.bool.ui_sounds);
+         boolean applied = false;
+ 
+         File dir = dir(ctx);
+@@ -238,6 +268,13 @@ final class Config {
+             inputKeycodes = intArray(json, "input_key_keycodes", inputKeycodes);
+             appKeys = stringList(json, "app_keys", appKeys);
+             cinematic = bool(json, "cinematic_home", cinematic);
++            brandName = string(json, "brand_name", brandName).trim();
++            bootSplash = bool(json, "boot_splash", bootSplash);
++            ambientGlow = bool(json, "ambient_glow", ambientGlow);
++            headerPills = bool(json, "header_pills", headerPills);
++            dockTopDp = integer(json, "dock_top_dp", dockTopDp, -1, 1080);
++            builtinWallpaper = bool(json, "builtin_wallpaper", builtinWallpaper);
++            uiSounds = bool(json, "ui_sounds", uiSounds);
+         }
+         // A theme push or reset invalidates choices made on the TV. On first use, remember the
+         // current theme without clearing choices from an older launcher version.
+@@ -291,7 +328,9 @@ final class Config {
+                 shamsi, greetingName, moduleCards, reducedMotion, dockTitle, dockRow, reorderButton, vpn, homeSettings, showStats, library, background,
+                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, wallpaperEnabled, wallpaper,
+                 wallpapers, rotationMinutes, wallpaperDim, applied,
+-                festival, inputKeycodes, appKeys, json == null ? Collections.emptyList() : raceCalendar(json), cinematic);
++                festival, inputKeycodes, appKeys, json == null ? Collections.emptyList() : raceCalendar(json), cinematic,
++                brandName, bootSplash && !brandName.isEmpty(), ambientGlow, headerPills, dockTopDp, builtinWallpaper,
++                uiSounds);
+     }
+ 
+     /**
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/DockDecoration.java b/launcher/app/src/main/java/com/gathin/tvhome/DockDecoration.java
+index 2961c32..078d895 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/DockDecoration.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/DockDecoration.java
+@@ -9,23 +9,32 @@ import android.view.View;
+ import androidx.annotation.NonNull;
+ import androidx.recyclerview.widget.RecyclerView;
+ 
+-/** Draws the tvOS style lighter band behind the first (dock) row and adds a gap below it. */
++/**
++ * Draws the band behind the first (dock) row and adds a gap below it. The default band is DreamOS glass
++ * (GlassDrawable) with 35px corners, 40px / 41.5px padding left and right of the tiles and 28px / 29px above
++ * and below them on the 1080p design.
++ */
+ public class DockDecoration extends RecyclerView.ItemDecoration {
+ 
+     private final int dockSize;
+     private final float density;
++    private final boolean translucent;
+     private final Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
+     private final Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
+     private final RectF rect = new RectF();
++    private final GlassDrawable glass;
++    private final Rect glassBounds = new Rect();
+ 
+     /** @param translucent the cinematic shelf's band: the artwork and the glow show through it. */
+     DockDecoration(int dockSize, float density, boolean translucent) {
+         this.dockSize = dockSize;
+         this.density = density;
+-        band.setColor(translucent ? 0x8C121014 : 0xFF141416);
++        this.translucent = translucent;
+         edge.setStyle(Paint.Style.STROKE);
+         edge.setStrokeWidth(density);
+-        edge.setColor(translucent ? 0x26FFFFFF : 0x1FFFFFFF);
++        band.setColor(0x8C121014);
++        edge.setColor(0x26FFFFFF);
++        glass = translucent ? null : new GlassDrawable(density, 17.5f * density);
+     }
+ 
+     @Override
+@@ -60,10 +69,16 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
+             }
+         }
+         if (!any) return;
+-        float pad = 14 * density;
+-        rect.inset(-pad, -pad);
+-        float radius = 26 * density;
+-        c.drawRoundRect(rect, radius, radius, band);
+-        c.drawRoundRect(rect, radius, radius, edge);
++        if (translucent) {
++            rect.inset(-14 * density, -14 * density);
++            float radius = 26 * density;
++            c.drawRoundRect(rect, radius, radius, band);
++            c.drawRoundRect(rect, radius, radius, edge);
++            return;
++        }
++        glassBounds.set(Math.round(rect.left - 20 * density), Math.round(rect.top - 14 * density),
++                Math.round(rect.right + 20.75f * density), Math.round(rect.bottom + 14.5f * density));
++        glass.setBounds(glassBounds);
++        glass.draw(c);
+     }
+ }
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/GlassDrawable.java b/launcher/app/src/main/java/com/gathin/tvhome/GlassDrawable.java
+new file mode 100644
+index 0000000..62cf774
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/GlassDrawable.java
+@@ -0,0 +1,75 @@
++package com.gathin.tvhome;
++
++import android.graphics.Bitmap;
++import android.graphics.BlurMaskFilter;
++import android.graphics.Canvas;
++import android.graphics.ColorFilter;
++import android.graphics.Paint;
++import android.graphics.PixelFormat;
++import android.graphics.Rect;
++import android.graphics.RectF;
++import android.graphics.drawable.Drawable;
++
++import androidx.annotation.NonNull;
++
++/**
++ * DreamOS glass: rgba(217,217,217,0.71) with a 2px white inside edge, softened by the design's 2px layer blur.
++ * The blur spills a few pixels past the bounds, so the parent must not clip there. It is drawn into a bitmap
++ * once per size: a blur mask on every frame would cost the Mali-470 on each focus move.
++ */
++final class GlassDrawable extends Drawable {
++
++    /** The design's 2px layer blur as a Skia blur radius (sigma 2). */
++    private static final float BLUR_PX = 2.6f;
++    private static final int MARGIN = (int) Math.ceil(BLUR_PX * 3);
++
++    private final float density;
++    private final float radius;
++    private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
++    private final Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
++    private Bitmap cache;
++
++    /** @param radiusPx corner radius in pixels (35px on the design: 17.5dp) */
++    GlassDrawable(float density, float radiusPx) {
++        this.density = density;
++        this.radius = radiusPx;
++        BlurMaskFilter blur = new BlurMaskFilter(BLUR_PX, BlurMaskFilter.Blur.NORMAL);
++        fill.setColor(0xB5D9D9D9);
++        fill.setMaskFilter(blur);
++        edge.setColor(0xFFFFFFFF);
++        edge.setStyle(Paint.Style.STROKE);
++        edge.setStrokeWidth(density);
++        edge.setMaskFilter(blur);
++    }
++
++    @Override
++    public void draw(@NonNull Canvas canvas) {
++        Rect b = getBounds();
++        if (b.isEmpty()) return;
++        int w = b.width() + 2 * MARGIN, h = b.height() + 2 * MARGIN;
++        if (cache == null || cache.getWidth() != w || cache.getHeight() != h) {
++            if (cache != null) cache.recycle();
++            cache = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
++            Canvas g = new Canvas(cache);
++            RectF shape = new RectF(MARGIN, MARGIN, w - MARGIN, h - MARGIN);
++            g.drawRoundRect(shape, radius, radius, fill);
++            // Figma strokes inside the shape.
++            shape.inset(density / 2, density / 2);
++            g.drawRoundRect(shape, radius, radius, edge);
++        }
++        canvas.drawBitmap(cache, b.left - MARGIN, b.top - MARGIN, null);
++    }
++
++    @Override
++    public void setAlpha(int alpha) {
++    }
++
++    @Override
++    public void setColorFilter(ColorFilter colorFilter) {
++    }
++
++    @Override
++    public int getOpacity() {
++        return PixelFormat.TRANSLUCENT;
++    }
++}
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index c38133e..0fb44a7 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -96,6 +96,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     private boolean rtlAppGrid;
+     private static final long MINUTE_MS = 60_000L;
+     private static final long STATS_MS = 10_000L;
++    /** boot_splash: how long after the TV is switched on a resume of Home still counts as switching on. */
++    private static final long SPLASH_WINDOW_MS = 15_000L;
++    /** boot_splash: from the name starting to fade in until Home starts to show through. */
++    private static final long SPLASH_HOLD_MS = 2_700L;
++    /** The boot (Settings.Global.BOOT_COUNT) the splash was last shown for, so it shows once per boot. */
++    private static final String SPLASH_BOOT_KEY = "splash_boot";
+     private String liveTvPkg;
+     private String liveTvAction;
+     private String inputAction;
+@@ -139,8 +145,37 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
+     private boolean showStats;
+     private boolean shamsi;
++    /** header_pills: the Inputs and Wi-Fi pills next to Settings. */
++    private boolean headerPills = true;
+     /** greeting_name: said after the greeting, which is shown in capitals. */
+     private String greetingName = "";
++    /** boot_splash: brand_name over black when the TV is switched on (see showSplash). */
++    private boolean bootSplash;
++    private View splash;
++    /** builtin_wallpaper: the blurred background shown below the dock, and the sharp one it replaces. */
++    private ImageView wallpaperBlur;
++    private android.graphics.drawable.Drawable sharpWallpaper;
++    private View leftBlock;
++    private boolean scrolledDown;
++    /** ui_sounds; null when off. */
++    private UiSounds sounds;
++    /** When the last D-pad key went down: a focus change this soon after it is the remote's move, not code's. */
++    private long navKeyAt;
++    private TextView splashName;
++    /** True from showSplash until the fade-out starts; keys only skip the splash meanwhile. */
++    private boolean splashShowing;
++    /** A resume before this (elapsedRealtime) shows the splash: set at a new boot and when the screen wakes. */
++    private long splashWindowEnd;
++    private boolean resumed;
++    private final BroadcastReceiver screenOnReceiver = new BroadcastReceiver() {
++        @Override
++        public void onReceive(Context context, Intent intent) {
++            // A TV woken from standby with Home already in front may resume before or after this arrives.
++            splashWindowEnd = SystemClock.elapsedRealtime() + SPLASH_WINDOW_MS;
++            if (resumed) showSplash();
++        }
++    };
++    private final Runnable endSplash = () -> hideSplash(600);
+     /** Optional time-of-day backdrop (config.xml, sky_intensity); 0 keeps it hidden. */
+     private SkyView sky;
+     private String vpnApp;
+@@ -268,6 +303,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         }
+     };
+ 
++    /**
++     * design_width_dp: scale the activity's density so the screen is that many dp wide, before any resource is
++     * read. A no-op on TVs that already match (1080p at 320 dpi, 720p at 213 dpi).
++     */
++    @Override
++    protected void attachBaseContext(Context base) {
++        super.attachBaseContext(base);
++        int designWidthDp = base.getResources().getInteger(R.integer.design_width_dp);
++        if (designWidthDp <= 0) return;
++        android.util.DisplayMetrics dm = base.getResources().getDisplayMetrics();
++        int widthPx = Math.max(dm.widthPixels, dm.heightPixels), heightPx = Math.min(dm.widthPixels, dm.heightPixels);
++        int dpi = Math.round(widthPx * 160f / designWidthDp);
++        if (Math.abs(dpi - dm.densityDpi) <= 1) return;
++        android.content.res.Configuration c = new android.content.res.Configuration();
++        c.densityDpi = dpi;
++        c.screenWidthDp = designWidthDp;
++        c.screenHeightDp = Math.round(heightPx * 160f / dpi);
++        c.smallestScreenWidthDp = c.screenHeightDp;
++        applyOverrideConfiguration(c);
++    }
++
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+@@ -292,12 +348,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+ 
+         root = findViewById(R.id.root);
+         root.setBackgroundColor(cfg.backgroundColor);
++        // A theme wallpaper is drawn over this one (WallpaperPlayer adds it as the bottom child).
++        if (cfg.builtinWallpaper) root.setBackgroundResource(R.drawable.home_wallpaper);
++        leftBlock = findViewById(R.id.leftBlock);
++        // Below the dock the built-in wallpaper turns into its blurred twin, baked from the design's bokeh
++        // shader: a live blur is out of reach for the Mali-470. Not over a theme's own wallpaper.
++        if (cfg.builtinWallpaper && cfg.wallpapers.isEmpty()) {
++            sharpWallpaper = root.getBackground();
++            wallpaperBlur = findViewById(R.id.wallpaperBlur);
++            wallpaperBlur.setImageResource(R.drawable.home_wallpaper_blur);
++            // One bitmap: its alpha can be applied while drawing, without a full-screen offscreen buffer.
++            wallpaperBlur.forceHasOverlappingRendering(false);
++        }
+         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+         sky = findViewById(R.id.sky);
+         sky.setIntensity(cfg.skyIntensity);
+         glass = findViewById(R.id.glass);
+         if (festive) glass.setAccent(festival.accentColor());
+         ambient = findViewById(R.id.ambient);
++        // ambient_glow false: the glow is still worked out, but never drawn.
++        if (!cfg.ambientGlow) ambient.setVisibility(View.GONE);
+         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
+         // a fade renders it into a full-screen offscreen buffer first.
+         ambient.forceHasOverlappingRendering(false);
+@@ -316,7 +386,39 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
+         greeting = findViewById(R.id.greeting);
+         greetingColor = greeting.getCurrentTextColor();
++        if (!cfg.brandName.isEmpty()) {
++            TextView brand = findViewById(R.id.brand);
++            brand.setText(cfg.brandName);
++            brand.setVisibility(View.VISIBLE);
++        }
++        splash = findViewById(R.id.splash);
++        splashName = findViewById(R.id.splashName);
++        if (cfg.uiSounds) {
++            sounds = new UiSounds(this);
++            root.getViewTreeObserver().addOnGlobalFocusChangeListener((was, now) -> {
++                if (was != null && now != null && SystemClock.elapsedRealtime() - navKeyAt < 300) sounds.move();
++            });
++        }
++        bootSplash = cfg.bootSplash;
++        if (bootSplash) {
++            splashName.setText(cfg.brandName);
++            IntentFilter screenOn = new IntentFilter(Intent.ACTION_SCREEN_ON);
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
++                registerReceiver(screenOnReceiver, screenOn, Context.RECEIVER_NOT_EXPORTED);
++            } else {
++                registerReceiver(screenOnReceiver, screenOn);
++            }
++            int boot = Settings.Global.getInt(getContentResolver(), Settings.Global.BOOT_COUNT, -1);
++            if (boot != getPreferences(MODE_PRIVATE).getInt(SPLASH_BOOT_KEY, -2)) {
++                getPreferences(MODE_PRIVATE).edit().putInt(SPLASH_BOOT_KEY, boot).apply();
++                splashWindowEnd = SystemClock.elapsedRealtime() + SPLASH_WINDOW_MS;
++                // Black from the first frame: the boot animation ends on it, and Home never flashes first.
++                splash.setVisibility(View.VISIBLE);
++            }
++        }
+         btnWifi = findViewById(R.id.btnWifi);
++        headerPills = cfg.headerPills;
++        if (!headerPills) btnWifi.setVisibility(View.GONE);
+         shamsiDate = findViewById(R.id.shamsiDate);
+         stats = findViewById(R.id.stats);
+         raceCalendar = cfg.raceCalendar;
+@@ -426,6 +528,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
+             // No dock to push down: the grid starts at the top, with room for the first row's zoom and glass.
+             if (!MainActivity.this.dockRow) want = (int) (AppAdapter.TOP_ROOM_DP * density);
++            // dock_top_dp: the dock tiles' top edge at a fixed height on the screen. The first card sits under
++            // the grid's top padding, DockDecoration's 6dp and the item's own 8dp.
++            if (MainActivity.this.dockRow && cfg.dockTopDp >= 0) {
++                int[] at = new int[2];
++                grid.getLocationInWindow(at);
++                want = Math.max(0, Math.round(cfg.dockTopDp * density) - at[1] - Math.round((6 + 8) * density));
++            }
+             if (grid.getPaddingTop() != want) {
+                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
+             }
+@@ -434,6 +543,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             grid.post(this::refitGlass);
+         });
+ 
++        grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
++            @Override
++            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
++                setScrolledDown(rv.computeVerticalScrollOffset() > 0);
++            }
++        });
++
+         // Keep the glass glued to its tile while the grid scrolls.
+         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
+             @Override
+@@ -465,8 +581,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+                 s.setSpring(new SpringForce().setStiffness(1400f).setDampingRatio(0.95f));
+                 s.setMinimumVisibleChange(1.5f);
+             } else {
+-                s.setSpring(new SpringForce().setStiffness(advancedEffects ? 320f : 260f)
+-                        .setDampingRatio(advancedEffects ? 0.76f : 0.58f));
++                // Critically damped: the highlight glides to the tile and stops there, with no overshoot or bounce.
++                s.setSpring(new SpringForce().setStiffness(600f).setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY));
++                s.setMinimumVisibleChange(1f);
+             }
+         }
+ 
+@@ -478,6 +595,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             open(systemIntent(Settings.ACTION_WIFI_SETTINGS));
+             return true;
+         });
++        // The glass is drawn in code (GlassDrawable blurs its edge once); focused, the button turns white.
++        android.graphics.drawable.StateListDrawable settingsBg = new android.graphics.drawable.StateListDrawable();
++        settingsBg.addState(new int[]{android.R.attr.state_focused}, getDrawable(R.drawable.glass_button_focused));
++        settingsBg.addState(new int[0], new GlassDrawable(density, 17.5f * density));
++        btnSettings.setBackground(settingsBg);
+         btnSettings.setOnClickListener(v -> open(systemIntent(Settings.ACTION_SETTINGS)));
+         btnReorder = findViewById(R.id.btnReorder);
+         btnReorder.setOnClickListener(v -> toggleReorder());
+@@ -589,7 +711,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             reloadApps(true);
+         }
+         rebuildOnResume = false;
++        resumed = true;
++        if (bootSplash) {
++            if (SystemClock.elapsedRealtime() < splashWindowEnd) showSplash();
++            else if (!splashShowing) splash.setVisibility(View.GONE);
++        }
+         updateGreeting();
++        // Home can come back already scrolled to the top without a scroll event (a rebuild): match the background.
++        grid.post(() -> setScrolledDown(grid.computeVerticalScrollOffset() > 0));
+         updateRace();
+         updateWifiLabel();
+         updateInputsButton();
+@@ -692,6 +821,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     @Override
+     protected void onPause() {
+         super.onPause();
++        resumed = false;
++        // Another app or an input took over (or a key skipped it): the splash never waits behind it.
++        if (bootSplash) {
++            handler.removeCallbacks(endSplash);
++            splash.animate().cancel();
++            splashShowing = false;
++            splash.setVisibility(View.GONE);
++        }
+         endReorder();   // Home or another app while reordering keeps the order so far
+         wallpaperPlayer.stop();
+         stopAmbientAnimation();
+@@ -727,6 +864,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     @Override
+     protected void onDestroy() {
+         super.onDestroy();
++        if (bootSplash) unregisterReceiver(screenOnReceiver);
++        if (sounds != null) sounds.release();
+         wallpaperPlayer.close();
+         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
+         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
+@@ -755,6 +894,64 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         return false;
+     }
+ 
++    // ---- blurred background below the dock ---------------------------------------------------------
++
++    /**
++     * Below the dock: the blurred wallpaper fades in and the brand and clock fade out; back on the dock, the
++     * reverse. Once the blur is fully in, the sharp wallpaper under it is no longer drawn, so the GPU still
++     * paints one full-screen picture per frame.
++     */
++    private void setScrolledDown(boolean down) {
++        if (wallpaperBlur == null || down == scrolledDown) return;
++        scrolledDown = down;
++        long ms = !animations ? 0 : reducedMotion ? 150 : 300;
++        wallpaperBlur.animate().cancel();
++        leftBlock.animate().cancel();
++        if (down) {
++            wallpaperBlur.setVisibility(View.VISIBLE);
++            wallpaperBlur.animate().alpha(1f).setDuration(ms).withEndAction(() -> root.setBackground(null)).start();
++        } else {
++            root.setBackground(sharpWallpaper);
++            wallpaperBlur.animate().alpha(0f).setDuration(ms)
++                    .withEndAction(() -> wallpaperBlur.setVisibility(View.GONE)).start();
++        }
++        leftBlock.animate().alpha(down ? 0f : 1f).setDuration(ms).start();
++    }
++
++    // ---- boot splash -----------------------------------------------------------------------------
++
++    /** brand_name fades in on black, holds, and Home fades in under it. Any key but volume skips the rest. */
++    private void showSplash() {
++        if (sounds != null) sounds.startup();
++        splashWindowEnd = 0;
++        splashShowing = true;
++        handler.removeCallbacks(endSplash);
++        splash.animate().cancel();
++        splashName.animate().cancel();
++        splash.setAlpha(1f);
++        splash.setVisibility(View.VISIBLE);
++        splashName.setAlpha(0f);
++        splashName.setScaleX(0.96f);
++        splashName.setScaleY(0.96f);
++        splashName.animate().alpha(1f).scaleX(1f).scaleY(1f)
++                .setDuration(reducedMotion || !animations ? 300 : 900)
++                .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
++        handler.postDelayed(endSplash, SPLASH_HOLD_MS);
++    }
++
++    private void hideSplash(long ms) {
++        if (splash.getVisibility() != View.VISIBLE) return;
++        splashShowing = false;
++        handler.removeCallbacks(endSplash);
++        splash.animate().alpha(0f).setDuration(ms)
++                .withEndAction(() -> splash.setVisibility(View.GONE)).start();
++    }
++
++    private static boolean isVolumeKey(int code) {
++        return code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN
++                || code == KeyEvent.KEYCODE_VOLUME_MUTE;
++    }
++
+     // ---- reorder ---------------------------------------------------------------------------------
+ 
+     /** Blue the glass turns while reorder mode is on. */
+@@ -769,6 +966,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+      */
+     @Override
+     public boolean dispatchKeyEvent(KeyEvent event) {
++        if (splashShowing && !isVolumeKey(event.getKeyCode())) {
++            if (event.getAction() == KeyEvent.ACTION_DOWN) hideSplash(200);
++            return true;
++        }
++        if (sounds != null && event.getAction() == KeyEvent.ACTION_DOWN) {
++            int code = event.getKeyCode();
++            if (code >= KeyEvent.KEYCODE_DPAD_UP && code <= KeyEvent.KEYCODE_DPAD_RIGHT) {
++                navKeyAt = SystemClock.elapsedRealtime();
++            } else if ((code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER
++                    || code == KeyEvent.KEYCODE_NUMPAD_ENTER) && event.getRepeatCount() == 0 && getCurrentFocus() != null) {
++                sounds.select();
++            }
++        }
+         if (handleSettingsKey(event)) return true;
+         if (!reordering) return super.dispatchKeyEvent(event);
+         if (dockEditing) return dispatchDockEdit(event);
+@@ -1996,7 +2206,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+                 }
+             }
+         }
+-        btnInputs.setVisibility(any ? View.VISIBLE : View.GONE);
++        btnInputs.setVisibility(any && headerPills ? View.VISIBLE : View.GONE);
+     }
+ 
+     /** The Live TV app's launch intent: its leanback entry point, or the configured action if it has none. */
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UiSounds.java b/launcher/app/src/main/java/com/gathin/tvhome/UiSounds.java
+new file mode 100644
+index 0000000..6a17b9e
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UiSounds.java
+@@ -0,0 +1,64 @@
++package com.gathin.tvhome;
++
++import android.content.Context;
++import android.media.AudioAttributes;
++import android.media.SoundPool;
++import android.os.SystemClock;
++import android.util.SparseBooleanArray;
++
++/**
++ * Interface sounds (config.xml, ui_sounds): res/raw/sound_startup with the boot splash, sound_move when the remote
++ * moves focus, sound_select on OK. Decoded once into a SoundPool, so a key plays without touching the disk.
++ */
++final class UiSounds {
++
++    /** A startup sound still loading when the splash shows plays only if it is ready this soon after. */
++    private static final long STARTUP_LATE_MS = 1_500L;
++
++    private final SoundPool pool;
++    private final int startup, move, select;
++    private final SparseBooleanArray loaded = new SparseBooleanArray();
++    private long startupWanted;
++
++    UiSounds(Context ctx) {
++        pool = new SoundPool.Builder()
++                .setMaxStreams(3)
++                // Media, not sonification: TCL keeps the system stream at 0 on the TV's speakers, and the sounds
++                // should follow the TV's volume like the rest of what it plays.
++                .setAudioAttributes(new AudioAttributes.Builder()
++                        .setUsage(AudioAttributes.USAGE_MEDIA)
++                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
++                        .build())
++                .build();
++        startup = pool.load(ctx, R.raw.sound_startup, 1);
++        move = pool.load(ctx, R.raw.sound_move, 1);
++        select = pool.load(ctx, R.raw.sound_select, 1);
++        // Load results arrive on this (main) thread's looper, so none can come before the listener is set.
++        pool.setOnLoadCompleteListener((p, id, status) -> {
++            if (status != 0) return;
++            loaded.put(id, true);
++            if (id == startup && SystemClock.elapsedRealtime() - startupWanted < STARTUP_LATE_MS) play(id);
++        });
++    }
++
++    void startup() {
++        if (loaded.get(startup)) play(startup);
++        else startupWanted = SystemClock.elapsedRealtime();
++    }
++
++    void move() {
++        play(move);
++    }
++
++    void select() {
++        play(select);
++    }
++
++    void release() {
++        pool.release();
++    }
++
++    private void play(int id) {
++        if (loaded.get(id)) pool.play(id, 1f, 1f, 1, 0, 1f);
++    }
++}
+diff --git a/launcher/app/src/main/res/drawable/glass_button_focused.xml b/launcher/app/src/main/res/drawable/glass_button_focused.xml
+new file mode 100644
+index 0000000..65617de
+--- /dev/null
++++ b/launcher/app/src/main/res/drawable/glass_button_focused.xml
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- A focused DreamOS glass button turns solid white like the pills; unfocused it is a GlassDrawable (MainActivity). -->
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
++    <solid android:color="#F5FFFFFF" />
++    <corners android:radius="17.5dp" />
++</shape>
+diff --git a/launcher/app/src/main/res/drawable/ic_settings_lucide.xml b/launcher/app/src/main/res/drawable/ic_settings_lucide.xml
+new file mode 100644
+index 0000000..ce8315a
+--- /dev/null
++++ b/launcher/app/src/main/res/drawable/ic_settings_lucide.xml
+@@ -0,0 +1,12 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- lucide/settings, 38px on the DreamOS 1080p design (Lucide, ISC licence). Tinted by the button it sits in. -->
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="19dp" android:height="19dp"
++    android:viewportWidth="38" android:viewportHeight="38">
++    <path
++        android:pathData="M15.3125 6.54581C15.3998 5.62802 15.826 4.77572 16.5081 4.15542C17.1901 3.53513 18.079 3.19141 19.0009 3.19141C19.9228 3.19141 20.8116 3.53513 21.4937 4.15542C22.1757 4.77572 22.602 5.62802 22.6893 6.54581C22.7417 7.1387 22.9362 7.71023 23.2563 8.21202C23.5764 8.71381 24.0127 9.1311 24.5282 9.42855C25.0438 9.72601 25.6234 9.89488 26.218 9.92088C26.8127 9.94688 27.4048 9.82923 27.9443 9.5779C28.7821 9.19755 29.7314 9.14251 30.6075 9.4235C31.4836 9.70449 32.2238 10.3014 32.6841 11.0981C33.1443 11.8947 33.2917 12.8341 33.0975 13.7335C32.9033 14.6328 32.3815 15.4277 31.6335 15.9635C31.1465 16.3052 30.7489 16.7593 30.4744 17.2872C30.1999 17.8151 30.0566 18.4014 30.0566 18.9964C30.0566 19.5914 30.1999 20.1776 30.4744 20.7055C30.7489 21.2334 31.1465 21.6875 31.6335 22.0292C32.3815 22.565 32.9033 23.3599 33.0975 24.2592C33.2917 25.1586 33.1443 26.098 32.6841 26.8947C32.2238 27.6913 31.4836 28.2882 30.6075 28.5692C29.7314 28.8502 28.7821 28.7952 27.9443 28.4148C27.4048 28.1635 26.8127 28.0458 26.218 28.0718C25.6234 28.0978 25.0438 28.2667 24.5282 28.5642C24.0127 28.8616 23.5764 29.2789 23.2563 29.7807C22.9362 30.2825 22.7417 30.854 22.6893 31.4469C22.602 32.3647 22.1757 33.217 21.4937 33.8373C20.8116 34.4576 19.9228 34.8013 19.0009 34.8013C18.079 34.8013 17.1901 34.4576 16.5081 33.8373C15.826 33.217 15.3998 32.3647 15.3125 31.4469C15.2602 30.8538 15.0657 30.2821 14.7455 29.7801C14.4253 29.2781 13.9888 28.8607 13.473 28.5632C12.9573 28.2657 12.3774 28.0969 11.7826 28.0711C11.1878 28.0452 10.5954 28.1632 10.0558 28.4148C9.21809 28.7952 8.26878 28.8502 7.39268 28.5692C6.51658 28.2882 5.77637 27.6913 5.31611 26.8947C4.85585 26.098 4.70848 25.1586 4.90267 24.2592C5.09685 23.3599 5.61871 22.565 6.36668 22.0292C6.85374 21.6875 7.25133 21.2334 7.52582 20.7055C7.8003 20.1776 7.94361 19.5914 7.94361 18.9964C7.94361 18.4014 7.8003 17.8151 7.52582 17.2872C7.25133 16.7593 6.85374 16.3052 6.36668 15.9635C5.61976 15.4274 5.09883 14.6328 4.90511 13.7341C4.71139 12.8354 4.85873 11.8968 5.31849 11.1006C5.77825 10.3045 6.51759 9.7077 7.39282 9.42628C8.26805 9.14486 9.21665 9.1989 10.0543 9.5779C10.5938 9.82923 11.1859 9.94688 11.7806 9.92088C12.3752 9.89488 12.9548 9.72601 13.4704 9.42855C13.9859 9.1311 14.4222 8.71381 14.7423 8.21202C15.0624 7.71023 15.2569 7.1387 15.3093 6.54581M23.7501 18.9971C23.7501 21.6205 21.6234 23.7471 19.0001 23.7471C16.3767 23.7471 14.2501 21.6205 14.2501 18.9971C14.2501 16.3738 16.3767 14.2471 19.0001 14.2471C21.6234 14.2471 23.7501 16.3738 23.7501 18.9971Z"
++        android:strokeColor="#FFFFFFFF"
++        android:strokeWidth="3.16667"
++        android:strokeLineCap="round"
++        android:strokeLineJoin="round" />
++</vector>
+diff --git a/launcher/app/src/main/res/drawable/tile_bg.xml b/launcher/app/src/main/res/drawable/tile_bg.xml
+index bc4bacd..39d2177 100644
+--- a/launcher/app/src/main/res/drawable/tile_bg.xml
++++ b/launcher/app/src/main/res/drawable/tile_bg.xml
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+     <solid android:color="#FF1C1C1E" />
+-    <corners android:radius="16dp" />
++    <corners android:radius="12.5dp" />
+ </shape>
+diff --git a/launcher/app/src/main/res/font/outfit_extralight.xml b/launcher/app/src/main/res/font/inter_tight_extralight.xml
+similarity index 77%
+rename from launcher/app/src/main/res/font/outfit_extralight.xml
+rename to launcher/app/src/main/res/font/inter_tight_extralight.xml
+index 397e298..e1fa52d 100644
+--- a/launcher/app/src/main/res/font/outfit_extralight.xml
++++ b/launcher/app/src/main/res/font/inter_tight_extralight.xml
+@@ -1,11 +1,11 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<!-- Outfit at weight 200, built once per process. android:fontVariationSettings on each TextView rebuilt
++<!-- Inter Tight at weight 200, built once per process. android:fontVariationSettings on each TextView rebuilt
+      the variable font for every view (about 10 ms each on a TV CPU). Android 8 ignores the weight here, as
+      it did on the views, and draws the default instance. -->
+ <font-family xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:tools="http://schemas.android.com/tools">
+     <font
+-        android:font="@font/outfit"
++        android:font="@font/inter_tight"
+         android:fontStyle="normal"
+         android:fontWeight="200"
+         android:fontVariationSettings="'wght' 200"
+diff --git a/launcher/app/src/main/res/font/outfit_light.xml b/launcher/app/src/main/res/font/inter_tight_light.xml
+similarity index 77%
+rename from launcher/app/src/main/res/font/outfit_light.xml
+rename to launcher/app/src/main/res/font/inter_tight_light.xml
+index 3633865..53b71d1 100644
+--- a/launcher/app/src/main/res/font/outfit_light.xml
++++ b/launcher/app/src/main/res/font/inter_tight_light.xml
+@@ -1,11 +1,11 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<!-- Outfit at weight 300, built once per process. android:fontVariationSettings on each TextView rebuilt
++<!-- Inter Tight at weight 300, built once per process. android:fontVariationSettings on each TextView rebuilt
+      the variable font for every view (about 10 ms each on a TV CPU). Android 8 ignores the weight here, as
+      it did on the views, and draws the default instance. -->
+ <font-family xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:tools="http://schemas.android.com/tools">
+     <font
+-        android:font="@font/outfit"
++        android:font="@font/inter_tight"
+         android:fontStyle="normal"
+         android:fontWeight="300"
+         android:fontVariationSettings="'wght' 300"
+diff --git a/launcher/app/src/main/res/font/outfit_medium.xml b/launcher/app/src/main/res/font/inter_tight_medium.xml
+similarity index 77%
+rename from launcher/app/src/main/res/font/outfit_medium.xml
+rename to launcher/app/src/main/res/font/inter_tight_medium.xml
+index 18d7699..31261b5 100644
+--- a/launcher/app/src/main/res/font/outfit_medium.xml
++++ b/launcher/app/src/main/res/font/inter_tight_medium.xml
+@@ -1,11 +1,11 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<!-- Outfit at weight 500, built once per process. android:fontVariationSettings on each TextView rebuilt
++<!-- Inter Tight at weight 500, built once per process. android:fontVariationSettings on each TextView rebuilt
+      the variable font for every view (about 10 ms each on a TV CPU). Android 8 ignores the weight here, as
+      it did on the views, and draws the default instance. -->
+ <font-family xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:tools="http://schemas.android.com/tools">
+     <font
+-        android:font="@font/outfit"
++        android:font="@font/inter_tight"
+         android:fontStyle="normal"
+         android:fontWeight="500"
+         android:fontVariationSettings="'wght' 500"
+diff --git a/launcher/app/src/main/res/font/outfit_regular.xml b/launcher/app/src/main/res/font/inter_tight_regular.xml
+similarity index 77%
+rename from launcher/app/src/main/res/font/outfit_regular.xml
+rename to launcher/app/src/main/res/font/inter_tight_regular.xml
+index 1550b02..cf33fcd 100644
+--- a/launcher/app/src/main/res/font/outfit_regular.xml
++++ b/launcher/app/src/main/res/font/inter_tight_regular.xml
+@@ -1,11 +1,11 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<!-- Outfit at weight 400, built once per process. android:fontVariationSettings on each TextView rebuilt
++<!-- Inter Tight at weight 400, built once per process. android:fontVariationSettings on each TextView rebuilt
+      the variable font for every view (about 10 ms each on a TV CPU). Android 8 ignores the weight here, as
+      it did on the views, and draws the default instance. -->
+ <font-family xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:tools="http://schemas.android.com/tools">
+     <font
+-        android:font="@font/outfit"
++        android:font="@font/inter_tight"
+         android:fontStyle="normal"
+         android:fontWeight="400"
+         android:fontVariationSettings="'wght' 400"
+diff --git a/launcher/app/src/main/res/layout-iw/activity_main.xml b/launcher/app/src/main/res/layout-iw/activity_main.xml
+deleted file mode 100644
+index e546dce..0000000
+--- a/launcher/app/src/main/res/layout-iw/activity_main.xml
++++ /dev/null
+@@ -1,374 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<!-- Hebrew-only header positioning. Other languages use layout/activity_main.xml. -->
+-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:id="@+id/root"
+-    android:layout_width="match_parent"
+-    android:layout_height="match_parent"
+-    android:background="#FF000000">
+-
+-    <!-- Time-of-day backdrop, drawn once a minute (config.xml sky_intensity; 0 keeps it hidden).
+-         Keep in step with layout/activity_main.xml: every view there must exist here too. -->
+-    <com.gathin.tvhome.SkyView
+-        android:id="@+id/sky"
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent"
+-        android:importantForAccessibility="no" />
+-
+-    <!-- Cinematic top shelf (cinematic_home): the focused dock app's artwork, a few pixels across and
+-         stretched over the screen, which softens it like a blur without the cost of one. Hidden otherwise. -->
+-    <ImageView
+-        android:id="@+id/heroArt"
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent"
+-        android:scaleType="fitXY"
+-        android:alpha="0"
+-        android:visibility="gone"
+-        android:importantForAccessibility="no" />
+-
+-    <!-- Ambient glow in the colour of the focused dock app. -->
+-    <View
+-        android:id="@+id/ambient"
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent"
+-        android:alpha="0" />
+-
+-    <!-- Race-weekend panel (a theme's race_calendar, see RaceWeekend), mirrored: under the clock on the right. -->
+-    <LinearLayout
+-        android:id="@+id/racePanel"
+-        android:layout_width="wrap_content"
+-        android:layout_height="wrap_content"
+-        android:layout_gravity="top|right"
+-        android:layout_marginEnd="60dp"
+-        android:layout_marginTop="158dp"
+-        android:gravity="right"
+-        android:orientation="vertical"
+-        android:focusable="false"
+-        android:importantForAccessibility="no"
+-        android:visibility="gone">
+-
+-        <LinearLayout
+-            android:layout_width="wrap_content"
+-            android:layout_height="wrap_content"
+-            android:orientation="horizontal"
+-            android:gravity="center_vertical">
+-
+-            <TextView
+-                android:id="@+id/raceKicker"
+-                android:layout_width="wrap_content"
+-                android:layout_height="wrap_content"
+-                android:singleLine="true"
+-                android:textColor="#B3FFFFFF"
+-                android:textSize="12sp"
+-                android:fontFamily="@font/outfit_medium"
+-                android:letterSpacing="0.22"
+-                android:textAllCaps="true" />
+-
+-            <View
+-                android:layout_width="3dp"
+-                android:layout_height="13dp"
+-                android:layout_marginStart="10dp"
+-                android:background="@drawable/race_bar" />
+-        </LinearLayout>
+-
+-        <TextView
+-            android:id="@+id/raceHeadline"
+-            android:layout_width="wrap_content"
+-            android:layout_height="wrap_content"
+-            android:layout_marginTop="8dp"
+-            android:singleLine="true"
+-            android:textColor="#FFFFFFFF"
+-            android:textSize="34sp"
+-            android:fontFamily="@font/outfit_light"
+-            android:letterSpacing="-0.01"
+-            android:includeFontPadding="false" />
+-
+-        <TextView
+-            android:id="@+id/raceSessions"
+-            android:layout_width="wrap_content"
+-            android:layout_height="wrap_content"
+-            android:layout_marginTop="12dp"
+-            android:singleLine="true"
+-            android:textColor="#99FFFFFF"
+-            android:textSize="12sp"
+-            android:fontFamily="@font/outfit_medium"
+-            android:letterSpacing="0.12" />
+-    </LinearLayout>
+-
+-    <!-- Cinematic top shelf: darkens the edge behind the shelf and the lower half, so the text and the
+-         dock stay readable over the artwork. -->
+-    <View
+-        android:id="@+id/heroScrim"
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent"
+-        android:visibility="gone"
+-        android:importantForAccessibility="no" />
+-
+-    <!-- Top shelf: the focused dock app's name, positioned above the dock in code. -->
+-    <LinearLayout
+-        android:id="@+id/hero"
+-        android:layout_width="wrap_content"
+-        android:layout_height="wrap_content"
+-        android:layout_marginEnd="68dp"
+-        android:layout_gravity="right"
+-        android:gravity="right"
+-        android:orientation="vertical"
+-        android:alpha="0">
+-
+-        <TextView
+-            android:id="@+id/heroName"
+-            android:layout_width="wrap_content"
+-            android:layout_height="wrap_content"
+-            android:layout_gravity="right"
+-            android:gravity="right"
+-            android:textColor="#FFFFFFFF"
+-            android:textSize="48sp"
+-            android:fontFamily="@font/outfit_light"
+-            android:letterSpacing="-0.02"
+-            android:includeFontPadding="false"
+-            android:singleLine="true" />
+-
+-        <!-- Cinematic shelf only: when the app was last opened, and the dock position dots. -->
+-        <TextView
+-            android:id="@+id/heroMeta"
+-            android:layout_width="wrap_content"
+-            android:layout_height="wrap_content"
+-            android:layout_gravity="right"
+-            android:layout_marginEnd="4dp"
+-            android:layout_marginTop="12dp"
+-            android:singleLine="true"
+-            android:textColor="#B3FFFFFF"
+-            android:textSize="15sp"
+-            android:fontFamily="@font/outfit_light"
+-            android:visibility="gone" />
+-
+-        <LinearLayout
+-            android:id="@+id/heroDots"
+-            android:layout_width="wrap_content"
+-            android:layout_height="6dp"
+-            android:layout_gravity="right"
+-            android:layout_marginEnd="4dp"
+-            android:layout_marginTop="16dp"
+-            android:orientation="horizontal"
+-            android:visibility="gone" />
+-    </LinearLayout>
+-
+-    <LinearLayout
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent"
+-        android:orientation="vertical"
+-        android:paddingStart="56dp"
+-        android:paddingEnd="56dp"
+-        android:paddingTop="26dp"
+-        android:clipChildren="false"
+-        android:clipToPadding="false">
+-
+-        <!-- No clipping down to the pills: with advanced effects a focused pill scales up past its row. -->
+-        <RelativeLayout
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:clipChildren="false"
+-            android:clipToPadding="false">
+-
+-            <LinearLayout
+-                android:id="@+id/leftBlock"
+-                android:layout_width="match_parent"
+-                android:layout_height="wrap_content"
+-                android:layout_alignParentEnd="true"
+-                android:layout_toEndOf="@+id/topButtons"
+-                android:layout_marginStart="16dp"
+-                android:orientation="horizontal"
+-                android:gravity="right|bottom">
+-
+-                <LinearLayout
+-                    android:layout_width="wrap_content"
+-                    android:layout_height="wrap_content"
+-                    android:layout_gravity="bottom"
+-                    android:layout_marginBottom="9dp"
+-                    android:orientation="vertical">
+-
+-                    <!-- Shamsi date ("27 Mehr 1405"), shown when shamsi_date is on. -->
+-                    <TextView
+-                        android:id="@+id/shamsiDate"
+-                        android:gravity="right"
+-                        android:layout_width="match_parent"
+-                        android:layout_height="wrap_content"
+-                        android:singleLine="true"
+-                        android:ellipsize="end"
+-                        android:textColor="#E6FFFFFF"
+-                        android:textSize="17sp"
+-                        android:fontFamily="@font/outfit_regular"
+-                        android:letterSpacing="0.02"
+-                        android:includeFontPadding="false"
+-                        android:visibility="gone" />
+-
+-                    <TextClock
+-                        android:id="@+id/date"
+-                        android:gravity="right"
+-                        android:layout_width="wrap_content"
+-                        android:layout_height="wrap_content"
+-                        android:singleLine="true"
+-                        android:ellipsize="end"
+-                        android:format12Hour="@string/date_format"
+-                        android:format24Hour="@string/date_format"
+-                        android:textColor="#A6FFFFFF"
+-                        android:textSize="14sp"
+-                        android:fontFamily="@font/outfit_regular"
+-                        android:letterSpacing="0.14"
+-                        android:textAllCaps="true" />
+-                </LinearLayout>
+-
+-                <View
+-                    android:layout_width="1dp"
+-                    android:layout_height="26dp"
+-                    android:layout_gravity="bottom"
+-                    android:layout_marginStart="16dp"
+-                    android:layout_marginEnd="16dp"
+-                    android:layout_marginBottom="8dp"
+-                    android:background="#33FFFFFF" />
+-
+-                <LinearLayout
+-                    android:layout_width="wrap_content"
+-                    android:layout_height="wrap_content"
+-                    android:orientation="vertical">
+-                    <TextView
+-                        android:id="@+id/greeting"
+-                        android:gravity="center_horizontal"
+-                        android:layout_width="match_parent"
+-                        android:layout_height="wrap_content"
+-                        android:singleLine="true"
+-                        android:ellipsize="end"
+-                        android:textColor="#8CFFFFFF"
+-                        android:textSize="12sp"
+-                        android:fontFamily="@font/outfit_medium"
+-                        android:letterSpacing="0.22"
+-                        android:textAllCaps="true" />
+-
+-                    <LinearLayout
+-                        android:layout_width="wrap_content"
+-                        android:layout_height="wrap_content"
+-                        android:orientation="horizontal"
+-                        android:baselineAligned="true">
+-                        <TextClock
+-                            android:id="@+id/clock"
+-                            android:layout_width="wrap_content"
+-                            android:layout_height="wrap_content"
+-                            android:format12Hour="h:mm"
+-                            android:format24Hour="HH:mm"
+-                            android:textColor="#FFFFFFFF"
+-                            android:textSize="52sp"
+-                            android:fontFamily="@font/outfit_light"
+-                            android:letterSpacing="-0.04"
+-                            android:includeFontPadding="false" />
+-
+-                        <TextClock
+-                            android:id="@+id/ampm"
+-                            android:layout_width="wrap_content"
+-                            android:layout_height="wrap_content"
+-                            android:layout_marginStart="6dp"
+-                            android:layout_gravity="bottom"
+-                            android:layout_marginBottom="8dp"
+-                            android:format12Hour="a"
+-                            android:format24Hour=""
+-                            android:textColor="#B3FFFFFF"
+-                            android:textSize="15sp"
+-                            android:fontFamily="@font/outfit_medium"
+-                            android:letterSpacing="0.08"
+-                            android:textAllCaps="true" />
+-                    </LinearLayout>
+-
+-                </LinearLayout>
+-            </LinearLayout>
+-
+-            <!-- Shown only when show_stats is on. Outside leftBlock, so the top buttons stay level with the clock
+-                 row; gone, it takes no space. -->
+-            <TextView
+-                android:id="@+id/stats"
+-                android:layout_width="0dp"
+-                android:layout_below="@id/leftBlock"
+-                android:layout_alignStart="@id/leftBlock"
+-                android:layout_alignEnd="@id/leftBlock"
+-                android:gravity="right"
+-                android:layout_height="wrap_content"
+-                android:layout_marginTop="2dp"
+-                android:singleLine="true"
+-                android:ellipsize="end"
+-                android:textColor="#D9FFFFFF"
+-                android:textSize="14sp"
+-                android:fontFamily="@font/outfit_medium"
+-                android:letterSpacing="0.04"
+-                android:focusable="false"
+-                android:visibility="gone" />
+-
+-            <LinearLayout
+-                android:id="@+id/topButtons"
+-                android:layout_width="wrap_content"
+-                android:layout_height="wrap_content"
+-                android:layout_alignParentStart="true"
+-                android:layout_alignBottom="@id/leftBlock"
+-                android:layout_marginBottom="6dp"
+-                android:clipChildren="false"
+-                android:clipToPadding="false"
+-                android:orientation="horizontal">
+-
+-                <TextView
+-                    android:id="@+id/btnSettings"
+-                    style="@style/TopButton"
+-                    android:text="@string/settings"
+-                    android:drawableStart="@drawable/ic_settings"
+-                    android:nextFocusDown="@+id/grid" />
+-
+-                <TextView
+-                    android:id="@+id/btnReorder"
+-                    style="@style/TopButtonIcon"
+-                    android:contentDescription="@string/reorder"
+-                    android:drawableStart="@drawable/ic_swap_vert"
+-                    android:nextFocusDown="@+id/grid" />
+-
+-                <TextView
+-                    android:id="@+id/btnWifi"
+-                    style="@style/TopButton"
+-                    android:maxWidth="180dp"
+-                    android:singleLine="true"
+-                    android:ellipsize="end"
+-                    android:text="@string/wifi"
+-                    android:drawableStart="@drawable/ic_wifi"
+-                    android:nextFocusDown="@+id/grid" />
+-
+-                <TextView
+-                    android:id="@+id/btnInputs"
+-                    style="@style/TopButton"
+-                    android:text="@string/inputs"
+-                    android:drawableStart="@drawable/ic_input"
+-                    android:nextFocusDown="@+id/grid" />
+-            </LinearLayout>
+-        </RelativeLayout>
+-
+-        <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->
+-        <FrameLayout
+-            android:layout_width="match_parent"
+-            android:layout_height="0dp"
+-            android:layout_weight="1"
+-            android:layout_marginTop="10dp">
+-
+-            <androidx.recyclerview.widget.RecyclerView
+-                android:id="@+id/grid"
+-                android:layout_width="match_parent"
+-                android:layout_height="match_parent"
+-                android:paddingTop="10dp"
+-                android:paddingBottom="40dp"
+-                android:clipToPadding="false"
+-                android:clipChildren="false"
+-                android:overScrollMode="never"
+-                android:scrollbars="none"
+-                android:descendantFocusability="afterDescendants" />
+-        </FrameLayout>
+-    </LinearLayout>
+-
+-    <!-- The single floating glass highlight that springs between tiles. -->
+-    <com.gathin.tvhome.GlassView
+-        android:id="@+id/glass"
+-        android:layout_width="10dp"
+-        android:layout_height="10dp"
+-        android:alpha="0"
+-        android:importantForAccessibility="no" />
+-</FrameLayout>
+diff --git a/launcher/app/src/main/res/layout-iw/dream_clock.xml b/launcher/app/src/main/res/layout-iw/dream_clock.xml
+index 1c89415..865a0ab 100644
+--- a/launcher/app/src/main/res/layout-iw/dream_clock.xml
++++ b/launcher/app/src/main/res/layout-iw/dream_clock.xml
+@@ -34,7 +34,7 @@
+                 android:format24Hour=""
+                 android:textColor="#99FFFFFF"
+                 android:textSize="22sp"
+-                android:fontFamily="@font/outfit_medium"
++                android:fontFamily="@font/inter_tight_medium"
+                 android:letterSpacing="0.08"
+                 android:textAllCaps="true" />
+ 
+@@ -46,7 +46,7 @@
+                 android:format24Hour="HH:mm"
+                 android:textColor="#E6FFFFFF"
+                 android:textSize="120sp"
+-                android:fontFamily="@font/outfit_extralight"
++                android:fontFamily="@font/inter_tight_extralight"
+                 android:letterSpacing="-0.04"
+                 android:includeFontPadding="false" />
+         </LinearLayout>
+@@ -62,7 +62,7 @@
+             android:format24Hour="@string/date_format"
+             android:textColor="#8CFFFFFF"
+             android:textSize="18sp"
+-            android:fontFamily="@font/outfit_regular"
++            android:fontFamily="@font/inter_tight_regular"
+             android:letterSpacing="0.14"
+             android:textAllCaps="true" />
+     </LinearLayout>
+diff --git a/launcher/app/src/main/res/layout-iw/item_input.xml b/launcher/app/src/main/res/layout-iw/item_input.xml
+index aeb649d..3de23c7 100644
+--- a/launcher/app/src/main/res/layout-iw/item_input.xml
++++ b/launcher/app/src/main/res/layout-iw/item_input.xml
+@@ -20,7 +20,7 @@
+         android:duplicateParentState="true"
+         android:textSize="11sp"
+         android:textDirection="locale"
+-        android:fontFamily="@font/outfit"
++        android:fontFamily="@font/inter_tight"
+         android:letterSpacing="0.04" />
+ 
+     <View
+@@ -40,7 +40,7 @@
+         android:textColor="@drawable/pill_text"
+         android:duplicateParentState="true"
+         android:textSize="15sp"
+-        android:fontFamily="@font/outfit_medium"
++        android:fontFamily="@font/inter_tight_medium"
+         android:gravity="right"
+         android:textDirection="locale"
+         android:singleLine="true" />
+diff --git a/launcher/app/src/main/res/layout/activity_main.xml b/launcher/app/src/main/res/layout/activity_main.xml
+index b8895f0..83e49cd 100644
+--- a/launcher/app/src/main/res/layout/activity_main.xml
++++ b/launcher/app/src/main/res/layout/activity_main.xml
+@@ -5,6 +5,17 @@
+     android:layout_height="match_parent"
+     android:background="#FF000000">
+ 
++    <!-- builtin_wallpaper's blurred twin (home_wallpaper_blur.jpg), faded in over it while the grid is scrolled
++         below the dock. Set from code, so nothing is decoded when the built-in wallpaper is off. -->
++    <ImageView
++        android:id="@+id/wallpaperBlur"
++        android:layout_width="match_parent"
++        android:layout_height="match_parent"
++        android:scaleType="centerCrop"
++        android:alpha="0"
++        android:visibility="gone"
++        android:importantForAccessibility="no" />
++
+     <!-- Time-of-day backdrop, drawn once a minute (config.xml sky_intensity; 0 keeps it hidden). -->
+     <com.gathin.tvhome.SkyView
+         android:id="@+id/sky"
+@@ -65,7 +76,7 @@
+                 android:singleLine="true"
+                 android:textColor="#B3FFFFFF"
+                 android:textSize="12sp"
+-                android:fontFamily="@font/outfit_medium"
++                android:fontFamily="@font/inter_tight_medium"
+                 android:letterSpacing="0.22"
+                 android:textAllCaps="true" />
+         </LinearLayout>
+@@ -78,7 +89,7 @@
+             android:singleLine="true"
+             android:textColor="#FFFFFFFF"
+             android:textSize="34sp"
+-            android:fontFamily="@font/outfit_light"
++            android:fontFamily="@font/inter_tight_light"
+             android:letterSpacing="-0.01"
+             android:includeFontPadding="false" />
+ 
+@@ -90,7 +101,7 @@
+             android:singleLine="true"
+             android:textColor="#99FFFFFF"
+             android:textSize="12sp"
+-            android:fontFamily="@font/outfit_medium"
++            android:fontFamily="@font/inter_tight_medium"
+             android:letterSpacing="0.12" />
+     </LinearLayout>
+ 
+@@ -118,7 +129,7 @@
+             android:layout_height="wrap_content"
+             android:textColor="#FFFFFFFF"
+             android:textSize="48sp"
+-            android:fontFamily="@font/outfit_light"
++            android:fontFamily="@font/inter_tight_light"
+             android:letterSpacing="-0.02"
+             android:includeFontPadding="false"
+             android:singleLine="true" />
+@@ -133,7 +144,7 @@
+             android:singleLine="true"
+             android:textColor="#B3FFFFFF"
+             android:textSize="15sp"
+-            android:fontFamily="@font/outfit_light"
++            android:fontFamily="@font/inter_tight_light"
+             android:visibility="gone" />
+ 
+         <LinearLayout
+@@ -150,9 +161,9 @@
+         android:layout_width="match_parent"
+         android:layout_height="match_parent"
+         android:orientation="vertical"
+-        android:paddingStart="56dp"
+-        android:paddingEnd="56dp"
+-        android:paddingTop="26dp"
++        android:paddingStart="75dp"
++        android:paddingEnd="74dp"
++        android:paddingTop="18dp"
+         android:clipChildren="false"
+         android:clipToPadding="false">
+ 
+@@ -168,6 +179,7 @@
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_alignParentStart="true"
++                android:layout_alignParentTop="true"
+                 android:layout_toStartOf="@+id/topButtons"
+                 android:layout_marginEnd="16dp"
+                 android:orientation="vertical">
+@@ -175,6 +187,20 @@
+                 <!-- The header texts use gravity left, not start: the launcher lays out left to right
+                      (no supportsRtl), and with start a right-to-left script such as Arabic would move to the
+                      right edge of these full-width lines instead of staying under the clock. -->
++                <!-- brand_name, a wordmark above the greeting; hidden while it is empty. -->
++                <TextView
++                    android:id="@+id/brand"
++                    android:gravity="left"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:singleLine="true"
++                    android:layout_marginTop="3.5dp"
++                    android:textColor="#FFFFFFFF"
++                    android:textSize="24sp"
++                    android:fontFamily="@font/inter_tight_medium"
++                    android:includeFontPadding="false"
++                    android:visibility="gone" />
++
+                 <TextView
+                     android:id="@+id/greeting"
+                     android:gravity="left"
+@@ -185,9 +211,10 @@
+                     android:layout_marginStart="4dp"
+                     android:textColor="#8CFFFFFF"
+                     android:textSize="12sp"
+-                    android:fontFamily="@font/outfit_medium"
++                    android:fontFamily="@font/inter_tight_medium"
+                     android:letterSpacing="0.22"
+-                    android:textAllCaps="true" />
++                    android:textAllCaps="true"
++                    android:visibility="gone" />
+ 
+                 <LinearLayout
+                     android:layout_width="match_parent"
+@@ -202,9 +229,8 @@
+                         android:format12Hour="h:mm"
+                         android:format24Hour="HH:mm"
+                         android:textColor="#FFFFFFFF"
+-                        android:textSize="52sp"
+-                        android:fontFamily="@font/outfit_light"
+-                        android:letterSpacing="-0.04"
++                        android:textSize="18sp"
++                        android:fontFamily="@font/inter_tight_medium"
+                         android:includeFontPadding="false" />
+ 
+                     <TextClock
+@@ -218,9 +244,10 @@
+                         android:format24Hour=""
+                         android:textColor="#B3FFFFFF"
+                         android:textSize="15sp"
+-                        android:fontFamily="@font/outfit_medium"
++                        android:fontFamily="@font/inter_tight_medium"
+                         android:letterSpacing="0.08"
+-                        android:textAllCaps="true" />
++                        android:textAllCaps="true"
++                        android:visibility="gone" />
+ 
+                     <View
+                         android:layout_width="1dp"
+@@ -229,7 +256,8 @@
+                         android:layout_marginStart="16dp"
+                         android:layout_marginEnd="16dp"
+                         android:layout_marginBottom="8dp"
+-                        android:background="#33FFFFFF" />
++                        android:background="#33FFFFFF"
++                        android:visibility="gone" />
+ 
+                     <LinearLayout
+                         android:layout_width="0dp"
+@@ -237,7 +265,8 @@
+                         android:layout_height="wrap_content"
+                         android:layout_gravity="bottom"
+                         android:layout_marginBottom="9dp"
+-                        android:orientation="vertical">
++                        android:orientation="vertical"
++                        android:visibility="gone">
+ 
+                         <!-- Shamsi date ("27 Mehr 1405"), shown when shamsi_date is on. -->
+                         <TextView
+@@ -249,7 +278,7 @@
+                             android:ellipsize="end"
+                             android:textColor="#E6FFFFFF"
+                             android:textSize="17sp"
+-                            android:fontFamily="@font/outfit_regular"
++                            android:fontFamily="@font/inter_tight_regular"
+                             android:letterSpacing="0.02"
+                             android:includeFontPadding="false"
+                             android:visibility="gone" />
+@@ -267,7 +296,7 @@
+                             android:format24Hour="@string/date_format_home"
+                             android:textColor="#A6FFFFFF"
+                             android:textSize="14sp"
+-                            android:fontFamily="@font/outfit_regular"
++                            android:fontFamily="@font/inter_tight_regular"
+                             android:letterSpacing="0.14"
+                             android:textAllCaps="true" />
+                     </LinearLayout>
+@@ -290,7 +319,7 @@
+                 android:ellipsize="end"
+                 android:textColor="#D9FFFFFF"
+                 android:textSize="14sp"
+-                android:fontFamily="@font/outfit_medium"
++                android:fontFamily="@font/inter_tight_medium"
+                 android:letterSpacing="0.04"
+                 android:focusable="false"
+                 android:visibility="gone" />
+@@ -300,8 +329,7 @@
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:layout_alignParentEnd="true"
+-                android:layout_alignBottom="@id/leftBlock"
+-                android:layout_marginBottom="6dp"
++                android:layout_alignParentTop="true"
+                 android:clipChildren="false"
+                 android:clipToPadding="false"
+                 android:orientation="horizontal">
+@@ -332,9 +360,9 @@
+ 
+                 <TextView
+                     android:id="@+id/btnSettings"
+-                    style="@style/TopButton"
+-                    android:text="@string/settings"
+-                    android:drawableStart="@drawable/ic_settings"
++                    style="@style/GlassButton"
++                    android:contentDescription="@string/settings"
++                    android:drawableStart="@drawable/ic_settings_lucide"
+                     android:nextFocusDown="@+id/grid" />
+             </LinearLayout>
+         </RelativeLayout>
+@@ -350,6 +378,8 @@
+                 android:id="@+id/grid"
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent"
++                android:paddingStart="8dp"
++                android:paddingEnd="9dp"
+                 android:paddingTop="10dp"
+                 android:paddingBottom="40dp"
+                 android:clipToPadding="false"
+@@ -367,4 +397,26 @@
+         android:layout_height="10dp"
+         android:alpha="0"
+         android:importantForAccessibility="no" />
++
++    <!-- boot_splash: brand_name on black over everything when the TV is switched on, then faded away. -->
++    <FrameLayout
++        android:id="@+id/splash"
++        android:layout_width="match_parent"
++        android:layout_height="match_parent"
++        android:background="#FF000000"
++        android:importantForAccessibility="no"
++        android:visibility="gone">
++
++        <TextView
++            android:id="@+id/splashName"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_gravity="center"
++            android:textColor="#FFFFFFFF"
++            android:textSize="64sp"
++            android:fontFamily="@font/inter_tight_medium"
++            android:letterSpacing="-0.02"
++            android:includeFontPadding="false"
++            android:alpha="0" />
++    </FrameLayout>
+ </FrameLayout>
+diff --git a/launcher/app/src/main/res/layout/dialog_card_prompt.xml b/launcher/app/src/main/res/layout/dialog_card_prompt.xml
+index 39ef5b1..7fbe50d 100644
+--- a/launcher/app/src/main/res/layout/dialog_card_prompt.xml
++++ b/launcher/app/src/main/res/layout/dialog_card_prompt.xml
+@@ -20,7 +20,7 @@
+         android:ellipsize="end"
+         android:textColor="#FFFFFFFF"
+         android:textSize="22sp"
+-        android:fontFamily="@font/outfit_medium"
++        android:fontFamily="@font/inter_tight_medium"
+         android:letterSpacing="-0.01" />
+ 
+     <TextView
+@@ -31,7 +31,7 @@
+         android:textColor="#D9FFFFFF"
+         android:textSize="15sp"
+         android:lineSpacingExtra="3sp"
+-        android:fontFamily="@font/outfit" />
++        android:fontFamily="@font/inter_tight" />
+ 
+     <TextView
+         android:id="@+id/names"
+@@ -41,7 +41,7 @@
+         android:textColor="#D9FFFFFF"
+         android:textSize="15sp"
+         android:lineSpacingExtra="3sp"
+-        android:fontFamily="@font/outfit" />
++        android:fontFamily="@font/inter_tight" />
+ 
+     <TextView
+         android:id="@+id/hint"
+@@ -51,7 +51,7 @@
+         android:text="@string/card_prompt_hint"
+         android:textColor="#99FFFFFF"
+         android:textSize="13sp"
+-        android:fontFamily="@font/outfit" />
++        android:fontFamily="@font/inter_tight" />
+ 
+     <TextView
+         android:id="@+id/identity"
+@@ -62,7 +62,7 @@
+         android:textColor="#80FFFFFF"
+         android:textSize="12sp"
+         android:letterSpacing="0.03"
+-        android:fontFamily="@font/outfit" />
++        android:fontFamily="@font/inter_tight" />
+ 
+     <LinearLayout
+         android:layout_width="match_parent"
+diff --git a/launcher/app/src/main/res/layout/dream_clock.xml b/launcher/app/src/main/res/layout/dream_clock.xml
+index bfa0f21..36e0b2a 100644
+--- a/launcher/app/src/main/res/layout/dream_clock.xml
++++ b/launcher/app/src/main/res/layout/dream_clock.xml
+@@ -29,7 +29,7 @@
+                 android:format24Hour="HH:mm"
+                 android:textColor="#E6FFFFFF"
+                 android:textSize="120sp"
+-                android:fontFamily="@font/outfit_extralight"
++                android:fontFamily="@font/inter_tight_extralight"
+                 android:letterSpacing="-0.04"
+                 android:includeFontPadding="false" />
+ 
+@@ -41,7 +41,7 @@
+                 android:format24Hour=""
+                 android:textColor="#99FFFFFF"
+                 android:textSize="22sp"
+-                android:fontFamily="@font/outfit_medium"
++                android:fontFamily="@font/inter_tight_medium"
+                 android:letterSpacing="0.08"
+                 android:textAllCaps="true" />
+         </LinearLayout>
+@@ -55,7 +55,7 @@
+             android:format24Hour="@string/date_format"
+             android:textColor="#8CFFFFFF"
+             android:textSize="18sp"
+-            android:fontFamily="@font/outfit_regular"
++            android:fontFamily="@font/inter_tight_regular"
+             android:letterSpacing="0.14"
+             android:textAllCaps="true" />
+     </LinearLayout>
+diff --git a/launcher/app/src/main/res/layout/item_app.xml b/launcher/app/src/main/res/layout/item_app.xml
+index d6f9a1a..e6b7e74 100644
+--- a/launcher/app/src/main/res/layout/item_app.xml
++++ b/launcher/app/src/main/res/layout/item_app.xml
+@@ -9,8 +9,8 @@
+ 
+     <FrameLayout
+         android:id="@+id/card"
+-        android:layout_width="180dp"
+-        android:layout_height="101dp"
++        android:layout_width="174.5dp"
++        android:layout_height="82.5dp"
+         android:layout_gravity="center_horizontal|top"
+         android:background="@drawable/tile_bg"
+         android:focusable="true"
+@@ -45,16 +45,16 @@
+             android:ellipsize="end"
+             android:textColor="#FFFFFFFF"
+             android:textSize="13sp"
+-            android:fontFamily="@font/outfit"
++            android:fontFamily="@font/inter_tight"
+             android:visibility="gone" />
+     </FrameLayout>
+ 
+     <TextView
+         android:id="@+id/name"
+-        android:layout_width="180dp"
++        android:layout_width="174.5dp"
+         android:layout_height="22dp"
+         android:layout_gravity="center_horizontal|top"
+-        android:layout_marginTop="108dp"
++        android:layout_marginTop="89.5dp"
+         android:gravity="center"
+         android:singleLine="true"
+         android:ellipsize="end"
+@@ -62,6 +62,6 @@
+         android:translationY="-6dp"
+         android:textColor="#F2FFFFFF"
+         android:textSize="14sp"
+-        android:fontFamily="@font/outfit_medium"
++        android:fontFamily="@font/inter_tight_medium"
+         android:letterSpacing="0.02" />
+ </FrameLayout>
+diff --git a/launcher/app/src/main/res/layout/item_card_row.xml b/launcher/app/src/main/res/layout/item_card_row.xml
+index 2a72deb..b8b5259 100644
+--- a/launcher/app/src/main/res/layout/item_card_row.xml
++++ b/launcher/app/src/main/res/layout/item_card_row.xml
+@@ -28,7 +28,7 @@
+             android:textColor="@drawable/pill_text"
+             android:duplicateParentState="true"
+             android:textSize="15sp"
+-            android:fontFamily="@font/outfit_medium"
++            android:fontFamily="@font/inter_tight_medium"
+             android:singleLine="true"
+             android:ellipsize="end" />
+ 
+@@ -39,7 +39,7 @@
+             android:textColor="@drawable/pill_text"
+             android:duplicateParentState="true"
+             android:textSize="11sp"
+-            android:fontFamily="@font/outfit"
++            android:fontFamily="@font/inter_tight"
+             android:letterSpacing="0.04" />
+     </LinearLayout>
+ 
+@@ -50,7 +50,7 @@
+         android:textColor="@drawable/pill_text_mid"
+         android:duplicateParentState="true"
+         android:textSize="11sp"
+-        android:fontFamily="@font/outfit"
++        android:fontFamily="@font/inter_tight"
+         android:singleLine="true"
+         android:ellipsize="end" />
+ 
+@@ -61,7 +61,7 @@
+         android:textColor="@drawable/pill_text_mid"
+         android:duplicateParentState="true"
+         android:textSize="11sp"
+-        android:fontFamily="@font/outfit"
++        android:fontFamily="@font/inter_tight"
+         android:singleLine="true"
+         android:ellipsize="middle" />
+ 
+@@ -74,6 +74,6 @@
+         android:duplicateParentState="true"
+         android:textSize="10sp"
+         android:letterSpacing="0.03"
+-        android:fontFamily="@font/outfit"
++        android:fontFamily="@font/inter_tight"
+         android:maxLines="2" />
+ </LinearLayout>
+diff --git a/launcher/app/src/main/res/layout/item_input.xml b/launcher/app/src/main/res/layout/item_input.xml
+index 6dba0ba..c752660 100644
+--- a/launcher/app/src/main/res/layout/item_input.xml
++++ b/launcher/app/src/main/res/layout/item_input.xml
+@@ -28,7 +28,7 @@
+         android:textColor="@drawable/pill_text"
+         android:duplicateParentState="true"
+         android:textSize="15sp"
+-        android:fontFamily="@font/outfit_medium"
++        android:fontFamily="@font/inter_tight_medium"
+         android:singleLine="true" />
+ 
+     <View
+@@ -45,6 +45,6 @@
+         android:textColor="@drawable/pill_text_dim"
+         android:duplicateParentState="true"
+         android:textSize="11sp"
+-        android:fontFamily="@font/outfit"
++        android:fontFamily="@font/inter_tight"
+         android:letterSpacing="0.04" />
+ </LinearLayout>
+diff --git a/launcher/app/src/main/res/layout/popup_cards.xml b/launcher/app/src/main/res/layout/popup_cards.xml
+index f80e644..a387bcf 100644
+--- a/launcher/app/src/main/res/layout/popup_cards.xml
++++ b/launcher/app/src/main/res/layout/popup_cards.xml
+@@ -19,7 +19,7 @@
+         android:text="@string/module_cards"
+         android:textColor="#8CFFFFFF"
+         android:textSize="11sp"
+-        android:fontFamily="@font/outfit_medium"
++        android:fontFamily="@font/inter_tight_medium"
+         android:letterSpacing="0.18"
+         android:textAllCaps="true" />
+ 
+diff --git a/launcher/app/src/main/res/values/config.xml b/launcher/app/src/main/res/values/config.xml
+index 3deebbe..4ccd9b5 100644
+--- a/launcher/app/src/main/res/values/config.xml
++++ b/launcher/app/src/main/res/values/config.xml
+@@ -97,6 +97,35 @@
+          Gregorian date. -->
+     <bool name="shamsi_date">false</bool>
+ 
++    <!-- A name shown above the greeting on Home, like a wordmark ("MyTV"). Empty: no name. A theme can set
++         "brand_name". -->
++    <string name="brand_name" translatable="false">DreamOS</string>
++    <!-- When the TV is switched on (a boot, or the screen waking up with Home in front), brand_name fills the
++         black screen for about three seconds and fades into Home. Any key skips it. Needs brand_name; a theme can
++         set "boot_splash". -->
++    <bool name="boot_splash">true</bool>
++    <!-- The glow in the focused dock app's colour that fills the screen behind the shelf. false leaves the
++         background (or wallpaper) as it is, and saves a full-screen layer on weak GPUs. A theme can set
++         "ambient_glow". -->
++    <bool name="ambient_glow">false</bool>
++    <!-- The Inputs and Wi-Fi pills in the top bar. false leaves only Settings there (the remote's Input button
++         still switches inputs). A theme can set "header_pills". -->
++    <bool name="header_pills">false</bool>
++    <!-- Where the dock tiles' top edge sits, in dp from the top of the screen, for a layout drawn to fixed
++         coordinates (DreamOS: 424dp, 848px on a 1080p screen). -1 parks the dock low as usual. A theme can set
++         "dock_top_dp". -->
++    <integer name="dock_top_dp">424</integer>
++    <!-- res/drawable-nodpi/home_wallpaper.jpg (1920x1080) behind Home when no theme wallpaper is pushed.
++         A theme can set "builtin_wallpaper". -->
++    <bool name="builtin_wallpaper">true</bool>
++    <!-- Lay out on a canvas this many dp wide whatever density the TV reports, so a layout drawn on a 1920x1080
++         frame lands in the same place on every TV (Android TV's standard canvas is 960dp: 1080p at 320 dpi,
++         720p at 213 dpi). Some sets report 240 dpi at 1080p (a 1280dp canvas), which would shrink the layout.
++         0 keeps the TV's own density. -->
++    <integer name="design_width_dp">960</integer>
++    <!-- Interface sounds from res/raw: sound_startup with the boot splash, sound_move when the remote moves focus,
++         sound_select on OK. They play on the media stream, at the TV's volume. A theme can set "ui_sounds". -->
++    <bool name="ui_sounds">true</bool>
+     <!-- A name after the greeting: "Mr. Trịnh" shows GOOD MORNING, MR. TRỊNH. Empty: the greeting alone. -->
+     <string name="greeting_name" translatable="false"></string>
+     <!-- Optional VPN app the network pill opens (hold the pill for Wi-Fi settings), e.g. the package of the
+@@ -117,7 +146,7 @@
+ 
+     <!-- The focused dock app's name in large type above the dock. false keeps only the glow, which leaves room
+          for bigger tiles when rows_below_dock is 2 or 3. -->
+-    <bool name="dock_title">true</bool>
++    <bool name="dock_title">false</bool>
+ 
+     <!-- Tiles per row in the grid; the dock always has this many slots. Tiles are 180dp wide at 4 columns and
+          shrink to fit from 5 up (about 144dp at 5, 117dp at 6 on a 1080p TV). -->
+diff --git a/launcher/app/src/main/res/values/styles.xml b/launcher/app/src/main/res/values/styles.xml
+index 1833cd1..772a69e 100644
+--- a/launcher/app/src/main/res/values/styles.xml
++++ b/launcher/app/src/main/res/values/styles.xml
+@@ -17,7 +17,7 @@
+         <item name="android:background">@drawable/pill_bg</item>
+         <item name="android:textColor">@drawable/pill_text</item>
+         <item name="android:textSize">15sp</item>
+-        <item name="android:fontFamily">@font/outfit_medium</item>
++        <item name="android:fontFamily">@font/inter_tight_medium</item>
+         <item name="android:letterSpacing">0.01</item>
+         <item name="android:drawablePadding">9dp</item>
+         <item name="android:drawableTint">@drawable/pill_text</item>
+@@ -35,6 +35,19 @@
+         <item name="android:drawablePadding">0dp</item>
+     </style>
+ 
++    <!-- DreamOS glass button: 84x82px on the 1080p design with a 38px icon centred by even padding. MainActivity
++         gives it its glass background (GlassDrawable). Give it a contentDescription, since there is no text. -->
++    <style name="GlassButton">
++        <item name="android:layout_width">42dp</item>
++        <item name="android:layout_height">41dp</item>
++        <item name="android:layout_marginStart">10dp</item>
++        <item name="android:paddingStart">11.5dp</item>
++        <item name="android:gravity">center_vertical</item>
++        <item name="android:drawableTint">@drawable/pill_text</item>
++        <item name="android:focusable">true</item>
++        <item name="android:clickable">true</item>
++    </style>
++
+     <style name="SettingsRow">
+         <item name="android:layout_width">match_parent</item>
+         <item name="android:layout_height">52dp</item>

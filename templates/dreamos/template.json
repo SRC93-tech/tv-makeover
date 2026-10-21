@@ -1,0 +1,28 @@
+{
+  "name": "dreamos",
+  "title": "DreamOS",
+  "description": "Photo wallpaper, glass dock and settings button, Inter Tight, a brand wordmark and clock, a DreamOS boot splash and UI sounds. The wallpaper blurs when the app grid scrolls into view.",
+  "base": { "repo": "https://github.com/Gathin23/cleanyourtv", "commit": "687b5ee" },
+  "patch": "launcher.patch",
+  "assets": "assets/res",
+  "canvas": { "width_px": 1920, "height_px": 1080, "design_width_dp": 960 },
+  "config": {
+    "brand_name": "DreamOS",
+    "boot_splash": true,
+    "ambient_glow": false,
+    "header_pills": false,
+    "dock_title": false,
+    "dock_top_dp": 424,
+    "builtin_wallpaper": true,
+    "ui_sounds": true,
+    "design_width_dp": 960,
+    "columns": 4
+  },
+  "licenses": {
+    "code": "MIT (derived from cleanyourtv, (c) 2026 Gathin)",
+    "font": "Inter Tight, SIL Open Font License 1.1 (assets/FONT-LICENSE-INTER-TIGHT-OFL.txt)",
+    "icon": "lucide/settings, ISC (lucide.dev)",
+    "wallpaper": "Owner's artwork, check before redistributing",
+    "sounds": "Owner's generated sounds, check the generator's terms before redistributing"
+  }
+}

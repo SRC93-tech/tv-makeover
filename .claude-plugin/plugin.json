@@ -11,5 +11,11 @@
     "figma",
     "ui-sounds"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "author": {
+    "name": "paisanos-io",
+    "url": "https://github.com/paisanos-io"
+  },
+  "homepage": "https://github.com/paisanos-io/tv-makeover",
+  "repository": "https://github.com/paisanos-io/tv-makeover"
 }

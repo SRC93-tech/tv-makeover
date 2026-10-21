@@ -1,6 +1,9 @@
 {
   "name": "tv-makeover-skills",
-  "owner": { "name": "tv-makeover" },
+  "owner": {
+    "name": "paisanos-io",
+    "url": "https://github.com/paisanos-io"
+  },
   "plugins": [
     {
       "name": "tv-makeover",

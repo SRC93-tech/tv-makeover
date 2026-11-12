@@ -80,7 +80,7 @@ Write-Host "Pushing $ApkPath to TV..."
 if ($LASTEXITCODE -ne 0) { throw 'APK upload failed.' }
 
 Write-Host 'Installing, compiling, setting Home, and launching...'
-& $Py $TvPy "pm install -r /data/local/tmp/tvhome.apk && rm -f /data/local/tmp/tvhome.apk && cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity && cmd package compile -m speed -f com.gathin.tvhome && am start -W -S -n com.gathin.tvhome/.MainActivity"
+& $Py $TvPy "pm install -r /data/local/tmp/tvhome.apk && rm -f /data/local/tmp/tvhome.apk && (cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity 2>/dev/null || true) && (cmd package compile -m speed -f com.gathin.tvhome 2>/dev/null || true) && am start -W -S -n com.gathin.tvhome/.MainActivity"
 if ($LASTEXITCODE -ne 0) { throw 'APK install failed on TV.' }
 
 Write-Host 'Done! The updated launcher is now live on your TV.'

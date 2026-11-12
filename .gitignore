@@ -39,6 +39,7 @@ build/dreamos/launcher/replay_pid*.log
 *.keystore
 *adbkey*
 *.jpg
+!build/vu-fast-alpine/wallpapers/*.jpg
 *.jpeg
 *.png
 .env

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A focused DreamOS glass button turns solid white like the pills; unfocused it is a GlassDrawable (MainActivity). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#F5FFFFFF" />
+    <corners android:radius="17.5dp" />
+</shape>

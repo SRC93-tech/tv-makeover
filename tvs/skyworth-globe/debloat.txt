@@ -1,0 +1,47 @@
+# Skyworth globe (Flipkart U2 / board 9K02T), device globe_ap, brand globe_ATV
+# Android TV 8.0.0 (API 26), build GLB.MP20.1 release-keys, security patch 2019-02-05
+# SoC MediaTek MT5891, armeabi-v7a, Mali-T860 (OpenGL ES 3.2), ~1.9 GB RAM, 1920x1080 UI (320 dpi).
+# Fingerprint: globe_ATV/globe_ap/globe_ap:8.0.0/GLB.MP20.1/www-da03271359:user/release-keys
+#
+# Apply:   tools\disable.ps1 -TvHost <tv ip> examples\skyworth-globe\debloat.txt
+# Undo:    tools\restore.ps1 -TvHost <tv ip> examples\skyworth-globe\debloat.txt
+# Everything is DISABLED for user 0, not uninstalled. Comment out any line to keep it.
+#
+# Stock launcher: com.google.android.tvlauncher (left enabled until the new launcher owns Home).
+# Live TV app:    com.mediatek.wwtv.tvcenter
+# Factory-disabled before cleanup (left out so restore does not turn them on):
+#   com.google.android.music, com.smartdevice.tvworkwithalexa
+#
+# Kept on purpose:
+#   Core / TV / Inputs: com.mediatek.wwtv.tvcenter, com.mediatek.wwtv.setting, com.mediatek.tvinput,
+#     com.mediatek.tunerservice, com.mediatek.agent, com.mediatek.dmagent, mtktvapi.agent,
+#     com.mediatek.wifi, com.mediatek.partner.netflix, com.coocaa.factory, com.google.android.boot.appsplashscreen,
+#     com.google.android.leanbacklauncher.partnercustomizer (asks for android.permission.TV_INPUT_HARDWARE)
+#   Media & Casting: com.mediatek.wwtv.mediaplayer (USB media player), com.google.android.apps.mediashell (Chromecast)
+#   Voice & Keys: com.google.android.katniss (0% idle CPU, kept by choice), com.google.android.inputmethod.latin,
+#     com.google.android.apps.inputmethod.hindi (active spellcheck), skyworth.skyworthglobalime
+#   Store / System: com.android.vending, Play Services, Settings, ElectronicManual (hidden in launcher instead of disabled)
+#
+# Batch 1: telemetry, bug reporting, first-run tutorials and preload auto-install stub
+com.google.android.feedback                       # Market Feedback Agent
+com.google.android.tv.bugreportsender             # Bug report uploader
+com.google.android.tvtutorials                    # Android TV first-run tutorials
+android.autoinstalls.config.globe_ATV.globe_ap    # Play Auto-Install preload config stub
+
+# Batch 2: unused Google preloads (ElectronicManual stays enabled and hidden in launcher)
+com.google.android.videos                         # Google Play Movies & TV
+com.google.android.play.games                     # Google Play Games
+
+# Batch 3: unused Asian-language keyboards and TalkBack (English Latin IME and Hindi spellchecker kept)
+com.google.android.inputmethod.japanese           # Google Japanese Input
+com.google.android.inputmethod.korean             # Google Korean Input
+com.google.android.inputmethod.pinyin             # Google Pinyin Input
+com.google.android.apps.inputmethod.zhuyin        # Google Zhuyin Input
+com.google.android.marvin.talkback                # Android Accessibility Suite / TalkBack
+
+# Batch 4: stock Home recommendations, Backdrop screensaver (replaced by ClockDream), and stock launcher
+com.google.android.leanbacklauncher.recommendations    # Recommendations service
+com.google.android.tvrecommendations                   # Stock Home channels & recommendations
+com.google.android.backdrop                            # Google Backdrop ambient screensaver
+com.google.android.tvlauncher                          # Stock Android TV Home (disabled after DreamOS handover)
+

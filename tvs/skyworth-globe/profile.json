@@ -1,0 +1,16 @@
+{
+  "model": "Skyworth globe (U2)",
+  "built_by": "Skyworth / MediaTek MT5891 (board 9K02T, device globe_ap)",
+  "market": "India (IND-FLIPKART)",
+  "android": { "version": 8.0, "api": 26, "security_patch": "2019-02-05", "firmware": "GLB.MP20.1 release-keys" },
+  "hardware": { "board": "mt5891", "cpu": "4x Cortex-A53 (ARMv7)", "gpu": "Mali-T860, OpenGL ES 3.2", "ram_mb": 1922, "wifi": "5 GHz supported" },
+  "display": { "ui_px": "1920x1080", "density_dpi": 320, "panel": "3840x2160" },
+  "stock_launcher": "com.google.android.tvlauncher",
+  "debloat_list": "debloat.txt",
+  "launcher": {
+    "live_tv_package": "com.mediatek.wwtv.tvcenter",
+    "hidden_apps": ["com.mediatek.wwtv.tvcenter", "com.oem.home.apps.electronicmanual"]
+  },
+  "tested": "2026-11-12 on one unit: debloat (batches 1-4), cleanyourtv DreamOS template + Open-Meteo weather & auto sunset sky tint, ClockDream screensaver, 0.5x animation scales"
+}
+

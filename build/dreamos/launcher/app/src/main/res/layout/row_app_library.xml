@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="84dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <LinearLayout
+        android:id="@+id/btnLibrary"
+        android:layout_width="wrap_content"
+        android:layout_height="42dp"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="20dp"
+        android:background="@drawable/all_apps_tile_bg"
+        android:focusable="true"
+        android:clickable="true">
+
+        <ImageView
+            android:id="@+id/libraryIcon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_apps"
+            android:tint="#F2FFFFFF"
+            android:importantForAccessibility="no" />
+
+        <TextView
+            android:id="@+id/libraryLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="9dp"
+            android:text="@string/app_library"
+            android:textColor="#F2FFFFFF"
+            android:textSize="15sp"
+            android:fontFamily="@font/inter_tight_medium"
+            android:letterSpacing="0.01"
+            android:singleLine="true" />
+    </LinearLayout>
+</FrameLayout>

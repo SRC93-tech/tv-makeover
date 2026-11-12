@@ -1,0 +1,15 @@
+{
+  "device": "hamamatsucho",
+  "model": "Smart 2K ATV4",
+  "manufacturer": "Hisense",
+  "platform": "m5621",
+  "android_release": "9",
+  "sdk": 28,
+  "display": {
+    "size": "1280x720",
+    "density": 213
+  },
+  "memory_total_kb": 925340,
+  "live_tv_package": "com.mediatek.wwtv.tvcenter"
+}
+

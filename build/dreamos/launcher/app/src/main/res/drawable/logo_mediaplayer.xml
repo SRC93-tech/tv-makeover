@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Media Player film reel & center play circle -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M24,6C14.1,6 6,14.1 6,24C6,33.9 14.1,42 24,42C33.9,42 42,33.9 42,24C42,14.1 33.9,6 24,6ZM24,9.5C32.0,9.5 38.5,16.0 38.5,24C38.5,32.0 32.0,38.5 24,38.5C16.0,38.5 9.5,32.0 9.5,24C9.5,16.0 16.0,9.5 24,9.5ZM19.5,16.8L31.5,24L19.5,31.2Z" />
+</vector>
+

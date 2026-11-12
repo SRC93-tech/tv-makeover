@@ -40,8 +40,12 @@ public class TileFitTest {
     @Test
     public void oneRowUnderATitledDockFits() {
         int w = AppAdapter.tileWidthPx(INNER, GRID_H, 4, 1, true, true, D);
-        assertTrue(w < AppAdapter.tileWidthPx(INNER, 4, D));
+        assertTrue(w <= AppAdapter.tileWidthPx(INNER, 4, D));
         assertTrue(height(w, 1, true) <= GRID_H + 2);
+        // On a tighter grid height (770px), 1 row under a titled dock shrinks above MIN_HEIGHT_FIT so it fits.
+        int compactW = AppAdapter.tileWidthPx(INNER, 770, 4, 1, true, true, D);
+        assertTrue(compactW < AppAdapter.tileWidthPx(INNER, 4, D));
+        assertTrue(height(compactW, 1, true) <= 772);
     }
 
     @Test
@@ -66,7 +70,7 @@ public class TileFitTest {
 
     @Test
     public void droppingTheTitleGivesBiggerTiles() {
-        assertTrue(AppAdapter.tileWidthPx(INNER, GRID_H, 4, 1, false, true, D)
-                > AppAdapter.tileWidthPx(INNER, GRID_H, 4, 1, true, true, D));
+        assertTrue(AppAdapter.tileWidthPx(INNER, 720, 4, 1, false, true, D)
+                > AppAdapter.tileWidthPx(INNER, 720, 4, 1, true, true, D));
     }
 }

@@ -200,4 +200,19 @@
          dots, the focus glow takes the app's colour and the dock band turns translucent. false keeps the plain
          shelf. Can also be set with "cinematic_home": true in a theme's config.json. -->
     <bool name="cinematic_home">false</bool>
+
+    <!-- Animated hero Sharingan portrait with cursor tracking, blinking eyes, and wake spin. -->
+    <bool name="hero_eye_wallpaper">true</bool>
+    <!-- Crisp monochrome white logos with transparent boxless backgrounds instead of app banners. -->
+    <bool name="white_logo_icons">true</bool>
+    <!-- Soft radial crimson/white spotlight glow trailing the focused icon. -->
+    <bool name="spotlight_glow">true</bool>
+    <!-- Vertically rolling seconds dial next to the Home clock. -->
+    <bool name="rolling_seconds">true</bool>
+    <!-- Zoom-in launch transition when opening any app. -->
+    <bool name="app_open_zoom">true</bool>
+    <!-- CleanYourTV 3.4: Back key on idle Home opens ambient clock screen. -->
+    <bool name="back_opens_clock">true</bool>
+    <!-- "12", "24", or "system". -->
+    <string name="clock_format" translatable="false">12</string>
 </resources>

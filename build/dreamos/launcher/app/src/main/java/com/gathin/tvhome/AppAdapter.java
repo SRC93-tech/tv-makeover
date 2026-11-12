@@ -68,22 +68,24 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final String pkg;
         final Drawable banner;
         final Drawable icon;
+        final Drawable whiteLogo;
         /** Text under the tile when it is focused in the grid: the label, plus the caption for a card. */
         final String name;
         /** Ambient glow colour; 0 until sampled from the banner, or the card's accent from the start. */
         int ambient;
 
-        Entry(String label, ComponentName component, Drawable banner, Drawable icon) {
-            this(APP, label, component, banner, icon, null, 0);
+        Entry(String label, ComponentName component, Drawable banner, Drawable icon, Drawable whiteLogo) {
+            this(APP, label, component, banner, icon, whiteLogo, null, 0);
         }
 
-        Entry(int kind, String label, ComponentName component, Drawable banner, Drawable icon, String caption, int accent) {
+        Entry(int kind, String label, ComponentName component, Drawable banner, Drawable icon, Drawable whiteLogo, String caption, int accent) {
             this.kind = kind;
             this.label = label;
             this.component = component;
             this.pkg = component.getPackageName();
             this.banner = banner;
             this.icon = icon;
+            this.whiteLogo = whiteLogo;
             this.name = caption == null ? label : label + " \u00B7 " + caption;
             this.ambient = accent;
         }
@@ -192,6 +194,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Set<String> hidden;
     private final boolean animations;
     private final boolean advancedEffects;
+    private final boolean whiteLogoIcons;
+    private final boolean appOpenZoom;
     private final boolean showLibrary;
     /** Packages with a leanback entry at the last reload(): their tiles launch with the leanback category. */
     private Set<String> leanbackPackages = new HashSet<>();
@@ -213,6 +217,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.hidden = new HashSet<>(cfg.hiddenApps);
         this.animations = cfg.animations;
         this.advancedEffects = cfg.animations && cfg.advancedEffects;
+        this.whiteLogoIcons = cfg.whiteLogoIcons;
+        this.appOpenZoom = cfg.appOpenZoom;
         this.showHomeSettings = cfg.showHomeSettingsShortcut;
         this.showLibrary = cfg.appLibrary;
         this.reducedMotion = cfg.reducedMotion;
@@ -269,13 +275,14 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             String label = card != null ? card.label : Cards.cleanLabel(
                     appLabels.containsKey(pkg) ? appLabels.get(pkg) : String.valueOf(ri.loadLabel(pm)), pkg);
             if (!seen.add(pkg + '\n' + label)) continue;
-            Drawable banner = bundledBanner(appBanners.get(pkg));
-            if (banner == null) banner = loadBanner(pm, ri);
+            Drawable banner = whiteLogoIcons ? null : bundledBanner(appBanners.get(pkg));
+            if (!whiteLogoIcons && banner == null) banner = loadBanner(pm, ri);
             Drawable icon = ri.loadIcon(pm);
+            Drawable whiteLogo = whiteLogoIcons ? WhiteLogoHelper.resolveLogo(ctx, pkg, icon, null) : null;
             if (card != null) {
-                fresh.add(new Entry(Entry.CARD, label, component, banner, icon, card.caption, card.accent));
+                fresh.add(new Entry(Entry.CARD, label, component, banner, icon, whiteLogo, card.caption, card.accent));
             } else {
-                fresh.add(new Entry(label, component, banner, icon));
+                fresh.add(new Entry(label, component, banner, icon, whiteLogo));
             }
         }
         Collections.sort(fresh, (a, b) -> {
@@ -296,16 +303,17 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         // Retain the optional Default-home tile until dependent tile-ordering work is merged.
         if (showHomeSettings
                 && pm.resolveActivity(new Intent(Settings.ACTION_HOME_SETTINGS), 0) != null) {
+            Drawable settingsIcon = ctx.getDrawable(R.drawable.ic_home_settings);
             fresh.add(new Entry(Entry.HOME_SETTINGS, ctx.getString(R.string.home_settings),
                     new ComponentName(ctx, HomeSettingsActivity.class), null,
-                    ctx.getDrawable(R.drawable.ic_home_settings), null, 0));
+                    settingsIcon, whiteLogoIcons ? settingsIcon : null, null, 0));
         }
         docked = 0;
         while (docked < fresh.size() && favourites.contains(fresh.get(docked).pkg)) docked++;
         emptySlots = dockRow && !singleRowBar && !reordering ? DockSlots.empty(docked, dockSize, fresh.size(), fillDock) : 0;
         for (int i = 0; i < emptySlots; i++) {
             fresh.add(docked + i, new Entry(Entry.EMPTY, "", new ComponentName(ctx, "empty-dock-slot-" + i),
-                    null, null, null, 0));
+                    null, null, null, null, 0));
         }
         items.clear();
         items.addAll(fresh);
@@ -360,7 +368,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (singleRowBar) {
                 row.setLayoutParams(new RecyclerView.LayoutParams(
                         ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                int padH = Math.round(12 * density);
+                int padH = Math.round((whiteLogoIcons ? 10 : 12) * density);
                 int padV = Math.round(8 * density);
                 row.setPadding(padH, padV, padH, padV);
                 if (button instanceof android.widget.LinearLayout) {
@@ -368,7 +376,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
                 button.setPadding(0, 0, 0, 0);
                 ViewGroup.LayoutParams btnLp = button.getLayoutParams();
-                btnLp.width = w;
+                btnLp.width = whiteLogoIcons ? Math.round(118 * density) : w;
                 btnLp.height = h;
                 if (btnLp instanceof android.widget.FrameLayout.LayoutParams) {
                     ((android.widget.FrameLayout.LayoutParams) btnLp).gravity = android.view.Gravity.CENTER_HORIZONTAL | android.view.Gravity.TOP;
@@ -377,7 +385,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 View icon = row.findViewById(R.id.libraryIcon);
                 if (icon != null) {
                     ViewGroup.LayoutParams ilp = icon.getLayoutParams();
-                    int isize = Math.round(24 * density);
+                    int isize = Math.round((whiteLogoIcons ? 42 : 24) * density);
                     ilp.width = isize;
                     ilp.height = isize;
                     icon.setLayoutParams(ilp);
@@ -389,30 +397,46 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     llp.topMargin = Math.round(6 * density);
                     label.setLayoutParams(llp);
                     ((TextView) label).setTextSize(14f);
+                    if (whiteLogoIcons) label.setAlpha(0f);
                 }
-                button.setOutlineProvider(new ViewOutlineProvider() {
-                    @Override
-                    public void getOutline(View view, Outline outline) {
-                        outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
-                    }
-                });
-                button.setClipToOutline(true);
+                if (whiteLogoIcons) {
+                    button.setBackground(null);
+                    button.setClipToOutline(false);
+                    button.setAlpha(0.78f);
+                } else {
+                    button.setOutlineProvider(new ViewOutlineProvider() {
+                        @Override
+                        public void getOutline(View view, Outline outline) {
+                            outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
+                        }
+                    });
+                    button.setClipToOutline(true);
+                }
             }
             button.setOnClickListener(v -> listener.onLibraryRequested());
             button.setOnFocusChangeListener((v, focused) -> {
                 if (singleRowBar) {
                     v.animate().cancel();
                     float s = focused && animations ? focusScale() : 1f;
-                    float ty = focused && advancedEffects ? -4f * density : 0f;
+                    float ty = focused && (advancedEffects || whiteLogoIcons) ? -4f * density : 0f;
                     float tz = focused && advancedEffects ? 8f * density : 0f;
+                    float targetAlpha = whiteLogoIcons ? (focused ? 1f : 0.78f) : 1f;
+                    View lbl = row.findViewById(R.id.libraryLabel);
+                    if (whiteLogoIcons && lbl != null) {
+                        lbl.animate().cancel();
+                        if (!animations) lbl.setAlpha(focused ? 1f : 0f);
+                        else lbl.animate().alpha(focused ? 1f : 0f).setDuration(focused ? 200 : 140).start();
+                    }
                     if (!animations) {
                         v.setScaleX(1f);
                         v.setScaleY(1f);
                         v.setTranslationY(0f);
                         v.setTranslationZ(0f);
+                        v.setAlpha(targetAlpha);
                     } else {
                         v.animate().scaleX(s).scaleY(s).translationY(ty).translationZ(tz)
-                                .setDuration(reducedMotion ? (focused ? 120 : 80) : (focused ? 240 : 170))
+                                .alpha(targetAlpha)
+                                .setDuration(reducedMotion ? (focused ? 120 : 80) : (focused ? 220 : 160))
                                 .setInterpolator(new DecelerateInterpolator(1.5f))
                                 .withLayer().start();
                     }
@@ -430,22 +454,34 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return new RecyclerView.ViewHolder(row) { };
         }
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_app, parent, false);
+        int tileW = whiteLogoIcons && singleRowBar ? Math.round(118 * density) : w;
         if (singleRowBar) {
             v.setLayoutParams(new RecyclerView.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            int padH = Math.round(12 * density);
+            int padH = Math.round((whiteLogoIcons ? 10 : 12) * density);
             int padV = Math.round(8 * density);
             v.setPadding(padH, padV, padH, padV);
         }
         View card = v.findViewById(R.id.card);
         ViewGroup.LayoutParams cardLp = card.getLayoutParams();
-        cardLp.width = w;
+        cardLp.width = tileW;
         cardLp.height = h;
         card.setLayoutParams(cardLp);
+        if (whiteLogoIcons) {
+            card.setBackground(null);
+            ImageView iconView = v.findViewById(R.id.icon);
+            android.widget.FrameLayout.LayoutParams ilp = (android.widget.FrameLayout.LayoutParams) iconView.getLayoutParams();
+            int logoPx = Math.round(48 * density);
+            ilp.width = logoPx;
+            ilp.height = logoPx;
+            ilp.bottomMargin = 0;
+            ilp.gravity = android.view.Gravity.CENTER;
+            iconView.setLayoutParams(ilp);
+        }
         View name = v.findViewById(R.id.name);
         ViewGroup.MarginLayoutParams nameLp = (ViewGroup.MarginLayoutParams) name.getLayoutParams();
-        nameLp.width = w;
-        nameLp.topMargin = h + Math.round((dockRow || singleRowBar ? 7 : 4) * density);
+        nameLp.width = tileW;
+        nameLp.topMargin = h + Math.round((dockRow || singleRowBar ? (whiteLogoIcons ? 3 : 7) : 4) * density);
         if (!dockRow && !singleRowBar) {
             // Compact spacing (COMPACT_ITEM_EXTRA_DP): 4dp item padding and a 20dp name instead of 8dp and 22dp.
             nameLp.height = Math.round(20 * density);
@@ -453,7 +489,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             v.setPadding(v.getPaddingLeft(), pad, v.getPaddingRight(), pad);
         }
         name.setLayoutParams(nameLp);
-        return new Holder(v, listener, animations, advancedEffects, reducedMotion);
+        return new Holder(v, listener, animations, advancedEffects, reducedMotion, whiteLogoIcons);
     }
 
     @Override
@@ -481,11 +517,19 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         h.name.setTranslationY(focused ? ctx.getResources().getDisplayMetrics().density * 4f : -ctx.getResources().getDisplayMetrics().density * 6f);
         h.card.setScaleX(focused && animations ? focusScale() : 1f);
         h.card.setScaleY(focused && animations ? focusScale() : 1f);
-        h.card.setTranslationY(focused && advancedEffects ? -4f * ctx.getResources().getDisplayMetrics().density : 0f);
+        h.card.setAlpha(whiteLogoIcons ? (focused ? 1f : 0.78f) : 1f);
+        h.card.setTranslationY(focused && (advancedEffects || whiteLogoIcons) ? -4f * ctx.getResources().getDisplayMetrics().density : 0f);
         h.card.setTranslationZ(focused && advancedEffects ? 8f * ctx.getResources().getDisplayMetrics().density : 0f);
         h.banner.setScaleX(focused && advancedEffects ? 1.035f : 1f);
         h.banner.setScaleY(focused && advancedEffects ? 1.035f : 1f);
-        if (e.banner != null) {
+        if (whiteLogoIcons) {
+            h.card.setBackground(null);
+            h.banner.setImageDrawable(null);
+            h.banner.setVisibility(View.GONE);
+            h.icon.setImageDrawable(e.whiteLogo != null ? e.whiteLogo : e.icon);
+            h.icon.setVisibility(View.VISIBLE);
+            h.label.setVisibility(View.GONE);
+        } else if (e.banner != null) {
             h.banner.setImageDrawable(e.banner);
             h.banner.setVisibility(View.VISIBLE);
             h.icon.setVisibility(View.GONE);
@@ -542,7 +586,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         try {
             ctx.startActivity(i);
             if (cinematic) LastOpened.record(ctx, e.pkg);
-            if (advancedEffects && ctx instanceof Activity) {
+            if ((appOpenZoom || advancedEffects) && animations && ctx instanceof Activity) {
                 ((Activity) ctx).overridePendingTransition(R.anim.app_open_enter, R.anim.app_open_exit);
             }
         } catch (Exception ex) {
@@ -653,7 +697,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     float focusScale() {
-        return !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
+        return !animations ? 1f : whiteLogoIcons ? 1.22f : advancedEffects ? 1.12f : 1.10f;
     }
 
     /** A vivid colour sampled from the app's banner (or icon), cached per entry; a card's accent when it set one. */
@@ -723,9 +767,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final boolean animations;
         final boolean advancedEffects;
         final boolean reducedMotion;
+        final boolean whiteLogoIcons;
 
         Holder(View v, TileListener listener, boolean animations, boolean advancedEffects,
-               boolean reducedMotion) {
+               boolean reducedMotion, boolean whiteLogoIcons) {
             super(v);
             card = v.findViewById(R.id.card);
             banner = v.findViewById(R.id.banner);
@@ -735,16 +780,21 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             this.animations = animations;
             this.advancedEffects = advancedEffects;
             this.reducedMotion = reducedMotion;
+            this.whiteLogoIcons = whiteLogoIcons;
 
             final float density = v.getResources().getDisplayMetrics().density;
-            card.setOutlineProvider(new ViewOutlineProvider() {
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    // 16dp at the design width, scaled down with the tile so small tiles keep the same shape.
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
-                }
-            });
-            card.setClipToOutline(true);
+            if (!whiteLogoIcons) {
+                card.setOutlineProvider(new ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(View view, Outline outline) {
+                        // 16dp at the design width, scaled down with the tile so small tiles keep the same shape.
+                        outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
+                    }
+                });
+                card.setClipToOutline(true);
+            } else {
+                card.setClipToOutline(false);
+            }
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
@@ -758,11 +808,14 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();
-                float scale = !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
+                float scale = !animations ? 1f : whiteLogoIcons ? 1.22f : advancedEffects ? 1.12f : 1.10f;
                 float s = focused ? scale : 1f;
+                float targetAlpha = whiteLogoIcons ? (focused ? 1f : 0.78f) : 1f;
+                float targetTy = focused && (advancedEffects || whiteLogoIcons) ? -4f * density : 0f;
                 if (!animations) {
                     view.setScaleX(1f);
                     view.setScaleY(1f);
+                    view.setAlpha(targetAlpha);
                     view.setTranslationY(0f);
                     view.setTranslationZ(0f);
                     banner.setScaleX(1f);
@@ -770,8 +823,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     name.setAlpha(focused ? 1f : 0f);
                     name.setTranslationY(0f);
                 } else if (reducedMotion) {
-                    view.animate().scaleX(s).scaleY(s)
-                            .translationY(focused && advancedEffects ? -4f * density : 0f)
+                    view.animate().scaleX(s).scaleY(s).alpha(targetAlpha)
+                            .translationY(targetTy)
                             .translationZ(focused && advancedEffects ? 8f * density : 0f)
                             .setDuration(focused ? 120 : 80)
                             .setInterpolator(new DecelerateInterpolator())
@@ -782,14 +835,14 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     // Only on focus: snapping it back to -6dp while it fades out would jump it up over the tile.
                     if (focused) name.setTranslationY(density * 4f);
                 } else {
-                    view.animate().scaleX(s).scaleY(s)
-                            .translationY(focused && advancedEffects ? -4f * density : 0f)
+                    view.animate().scaleX(s).scaleY(s).alpha(targetAlpha)
+                            .translationY(targetTy)
                             .translationZ(focused && advancedEffects ? 8f * density : 0f)
-                            .setDuration(advancedEffects ? (focused ? 220 : 170) : (focused ? 260 : 180))
+                            .setDuration(advancedEffects ? (focused ? 220 : 170) : (focused ? 230 : 170))
                             // No overshoot: the zoom lands on its size, like the highlight lands on the tile.
                             .setInterpolator(new DecelerateInterpolator(1.5f))
                             .withLayer().start();
-                    if (advancedEffects) {
+                    if (advancedEffects && !whiteLogoIcons) {
                         banner.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f)
                                 .setDuration(280).start();
                     }

@@ -11,6 +11,6 @@
     "live_tv_package": "com.mediatek.wwtv.tvcenter",
     "hidden_apps": ["com.mediatek.wwtv.tvcenter", "com.oem.home.apps.electronicmanual"]
   },
-  "tested": "2026-11-12 on one unit: debloat (batches 1-4), cleanyourtv DreamOS template + Open-Meteo weather & auto sunset sky tint, ClockDream screensaver, 0.5x animation scales"
+  "tested": "2026-11-12 on one unit: debloat (batches 1-4), CleanYourTV 3.4 hero Sharingan portrait + eye gaze tracking + blinks + wake spin + white boxless logos + moving spotlight + rolling seconds + Open-Meteo weather + ClockActivity on Back, ClockDream screensaver, 0.5x animation scales"
 }
 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- LocalSend crisp diamond share / radar flower -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M24,6L42,24L24,42L6,24ZM24,14.5A9.5,9.5 0 1,0 24.01,14.5ZM24,19.2A4.8,4.8 0 1,1 23.99,19.2Z" />
+</vector>
+

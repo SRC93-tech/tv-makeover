@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Spotify circular monochrome soundwaves badge -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M24,6A18,18 0 1,1 23.99,6Z
+        M14.8,19.3C20.9,17.4 29.8,17.7 35.1,20.9C36.0,21.4 36.3,22.5 35.8,23.4C35.3,24.2 34.2,24.5 33.3,24.0C28.8,21.3 20.8,21.0 15.8,22.6C14.9,22.9 13.9,22.4 13.6,21.5C13.3,20.6 13.8,19.6 14.8,19.3Z
+        M16.2,25.5C21.2,24.0 28.4,24.3 32.9,27.0C33.6,27.5 33.9,28.4 33.4,29.1C33.0,29.9 32.0,30.1 31.3,29.7C27.5,27.4 21.0,27.1 17.0,28.3C16.2,28.5 15.4,28.1 15.2,27.3C15.0,26.5 15.4,25.7 16.2,25.5Z
+        M17.5,31.2C21.5,30.0 27.1,30.2 30.8,32.5C31.4,32.9 31.6,33.7 31.2,34.3C30.8,34.9 30.0,35.1 29.4,34.7C26.2,32.8 21.3,32.6 18.2,33.5C17.6,33.7 16.9,33.3 16.7,32.7C16.5,32.0 16.9,31.4 17.5,31.2Z" />
+</vector>
+

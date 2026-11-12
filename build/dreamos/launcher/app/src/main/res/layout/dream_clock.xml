@@ -27,6 +27,7 @@
                 android:layout_height="wrap_content"
                 android:format12Hour="h:mm"
                 android:format24Hour="h:mm"
+                android:fontFeatureSettings="tnum"
                 android:textColor="#E6FFFFFF"
                 android:textSize="120sp"
                 android:fontFamily="@font/inter_tight_extralight"

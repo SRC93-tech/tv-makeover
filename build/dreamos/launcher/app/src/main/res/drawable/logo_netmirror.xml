@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- NetMirrorTV geometric M emblem -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M8,38L8,10L14.5,10L24,23.5L33.5,10L40,10L40,38L34,38L34,20.5L24,34L14,20.5L14,38Z" />
+</vector>
+

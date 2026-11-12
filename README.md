@@ -6,13 +6,15 @@ Maintained at [SRC93-tech/tv-makeover](https://github.com/SRC93-tech/tv-makeover
 
 ## Launcher Highlights
 
-- **Single Horizontal App Bar + All Apps Card**: All home apps sit in a single bottom-aligned scrollable strip ending with a frosted **All apps** card that opens the full app library dialog.
-- **Smooth App Reordering**: Enter reorder mode from **Settings → Reorder apps** or by long-pressing **OK** on any app tile (**Move / Rearrange**). The carried tile lifts while neighbors smoothly slide and dim, guided by a floating hint pill and `GlassView` focus tracking.
+- **Animated Hero Gaze & Wake Spin (`hero_eye_wallpaper`)**: Dark rainy Itachi portrait backdrop with live cursor-tracking Sharingan irises (`SharinganWallpaperView`) that smoothly follow focus across app icons, *All apps*, and top-bar pills, perform natural random blinks, and play a `720°` Sharingan spin on wake/boot.
+- **Boxless Monochrome White Logos + Moving Spotlight (`white_logo_icons` + `spotlight_glow`)**: Crisp pure-white SVG/vector logos with zero card boxes (`WhiteLogoHelper` + automatic foreground extraction fallback); the focused app scales cleanly (`1.22x`) with its name revealed beneath, trailed by a hardware-cached radial `SpotlightGlowView`.
+- **Single Horizontal App Bar + All Apps**: All home apps sit in a single bottom-aligned scrollable strip ending with an **All apps** item that opens the full app library dialog, plus zoom-in launch transitions (`app_open_zoom`).
+- **Rolling Seconds Clock + Ambient Clock on Back (`rolling_seconds` + `back_opens_clock`)**: 12-hour clock with `tnum` tabular numerals, vertically rolling seconds drum (`RollingSecondsView`), standby clock tick resilience (`ClockRefresh`), and an ambient clock + weather screen (`ClockActivity`) on **Back** from idle Home.
+- **Smooth App Reordering**: Enter reorder mode from **Settings → Reorder apps** or by long-pressing **OK** on any app tile (**Move / Rearrange**). The carried tile lifts with a crisp blue frame highlight while neighbors smoothly slide and dim.
 - **Personal Header & Live Weather**:
-  - Customizable TV title, time-of-day greeting, and **12-hour AM/PM clock** with inline date.
-  - **Open-Meteo live weather** (no API key required) with condition vector icons (sun, moon, partly cloudy, cloudy, fog, rain, snow, thunderstorm) across both Home and the `ClockDream` screensaver, plus optional solar sky tinting.
+  - Customizable TV title, time-of-day greeting, and **Open-Meteo live weather** (no API key required) with condition vector icons across Home, `ClockActivity`, and the `ClockDream` screensaver.
 - **Quick Access Pills & Single-Tap Settings**: Top-right **Inputs** switcher, live **Wi-Fi** status pill (connected SSID with green/red indicator dot), and a single-tap **Settings** menu (*Launcher settings*, *TV system settings*, *Module cards*, *Reorder apps*).
-- **Low-RAM Tuned Mode**: Built-in `reduced_motion` support via runtime `config.json` disables expensive full-screen glow/blur layers while keeping smooth focus transitions responsive even on `925 MB` RAM TVs.
+- **Low-RAM Tuned Mode**: Built-in `reduced_motion` and feature-flag overrides via runtime `config.json` (e.g., [`build/vu-fast-alpine/config.json`](build/vu-fast-alpine/config.json)) keep low-RAM TVs (`925 MB`) fast and unaffected while newer hardware runs the full hero effects.
 
 ## Tested TVs & Real Results
 

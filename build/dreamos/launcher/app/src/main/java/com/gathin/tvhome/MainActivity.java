@@ -165,6 +165,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** builtin_wallpaper: the blurred background shown below the dock, and the sharp one it replaces. */
     private ImageView wallpaperBlur;
     private android.graphics.drawable.Drawable sharpWallpaper;
+    private SharinganWallpaperView sharinganWallpaper;
+    private SpotlightGlowView spotlight;
+    private RollingSecondsView rollingSeconds;
+    private android.widget.TextClock clockView, ampmInlineView;
+    private ClockRefresh clockRefresh;
+    private boolean heroEyeWallpaper, whiteLogoIcons, spotlightGlow, backOpensClock;
     private View leftBlock;
     private boolean scrolledDown;
     /** ui_sounds; null when off. */
@@ -181,8 +187,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void onReceive(Context context, Intent intent) {
             // A TV woken from standby with Home already in front may resume before or after this arrives.
-            splashWindowEnd = SystemClock.elapsedRealtime() + SPLASH_WINDOW_MS;
-            if (resumed) showSplash();
+            if (bootSplash) {
+                splashWindowEnd = SystemClock.elapsedRealtime() + SPLASH_WINDOW_MS;
+                if (resumed) showSplash();
+            } else if (heroEyeWallpaper && sharinganWallpaper != null && resumed) {
+                sharinganWallpaper.triggerWakeSpin();
+            }
         }
     };
     private final Runnable endSplash = () -> hideSplash(600);
@@ -196,6 +206,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private float glassScrollShiftX, glassScrollShiftY;
     private int glassCardW;   // width of the tile the glass was last fitted to
     private boolean glassShown;
+    private SpringAnimation spotlightSpringX, spotlightSpringY;
+    private float spotlightTargetX, spotlightTargetY;
+    private float spotlightScrollShiftX, spotlightScrollShiftY;
+    private boolean spotlightShown;
     private final Rect tileRect = new Rect();
     private final Rect revealRect = new Rect();
     // Static so they survive the activity being destroyed while another app is open (low-memory TVs,
@@ -353,6 +367,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         reducedMotion = cfg.reducedMotion;
         singleRowBar = cfg.singleRowBar;
         dockRow = cfg.dockRow && !singleRowBar;
+        heroEyeWallpaper = cfg.heroEyeWallpaper;
+        whiteLogoIcons = cfg.whiteLogoIcons;
+        spotlightGlow = cfg.spotlightGlow;
+        backOpensClock = cfg.backOpensClock;
         festival = cfg.festival;
         festive = festival.active(LocalDate.now());
         liveTvPkg = cfg.liveTvPackage;
@@ -363,12 +381,33 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         root = findViewById(R.id.root);
         root.setBackgroundColor(cfg.backgroundColor);
+        sharinganWallpaper = findViewById(R.id.sharinganWallpaper);
+        boolean useHeroEyeWallpaper = heroEyeWallpaper && cfg.wallpapers.isEmpty() && sharinganWallpaper != null;
+        if (useHeroEyeWallpaper) {
+            sharinganWallpaper.setVisibility(View.VISIBLE);
+        } else {
+            heroEyeWallpaper = false;
+        }
         // A theme wallpaper is drawn over this one (WallpaperPlayer adds it as the bottom child).
-        if (cfg.builtinWallpaper) root.setBackgroundResource(R.drawable.home_wallpaper);
+        if (!heroEyeWallpaper && cfg.builtinWallpaper) root.setBackgroundResource(R.drawable.home_wallpaper);
         leftBlock = findViewById(R.id.leftBlock);
+        clockView = findViewById(R.id.clock);
+        rollingSeconds = findViewById(R.id.rollingSeconds);
+        ampmInlineView = findViewById(R.id.ampmInline);
+        ClockFormat.apply(leftBlock, cfg.clockFormat);
+        clockRefresh = new ClockRefresh(leftBlock);
+        if (cfg.rollingSeconds && clockView != null && rollingSeconds != null) {
+            boolean is24 = ClockFormat.is24(this, cfg.clockFormat);
+            clockView.setFormat12Hour("h:mm");
+            clockView.setFormat24Hour(is24 ? "H:mm" : "h:mm");
+            rollingSeconds.setVisibility(View.VISIBLE);
+            if (ampmInlineView != null) {
+                ampmInlineView.setVisibility(is24 ? View.GONE : View.VISIBLE);
+            }
+        }
         // Below the dock the built-in wallpaper turns into its blurred twin, baked from the design's bokeh
         // shader: a live blur is out of reach for the Mali-470. Not over a theme's own wallpaper.
-        if (cfg.builtinWallpaper && cfg.wallpapers.isEmpty()) {
+        if (!heroEyeWallpaper && cfg.builtinWallpaper && cfg.wallpapers.isEmpty()) {
             sharpWallpaper = root.getBackground();
             wallpaperBlur = findViewById(R.id.wallpaperBlur);
             wallpaperBlur.setImageResource(R.drawable.home_wallpaper_blur);
@@ -419,14 +458,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             });
         }
         bootSplash = cfg.bootSplash;
-        if (bootSplash) {
-            splashName.setText(cfg.brandName);
+        if (bootSplash || heroEyeWallpaper) {
             IntentFilter screenOn = new IntentFilter(Intent.ACTION_SCREEN_ON);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 registerReceiver(screenOnReceiver, screenOn, Context.RECEIVER_NOT_EXPORTED);
             } else {
                 registerReceiver(screenOnReceiver, screenOn);
             }
+        }
+        if (bootSplash) {
+            splashName.setText(cfg.brandName);
             int boot = Settings.Global.getInt(getContentResolver(), Settings.Global.BOOT_COUNT, -1);
             if (boot != getPreferences(MODE_PRIVATE).getInt(SPLASH_BOOT_KEY, -2)) {
                 getPreferences(MODE_PRIVATE).edit().putInt(SPLASH_BOOT_KEY, boot).apply();
@@ -597,17 +638,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         });
 
-        // Keep the glass glued to its tile while the grid scrolls horizontally or vertically.
+        // Keep the glass (and spotlight) glued to its tile while the grid scrolls horizontally or vertically.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
-                if (!glassShown) return;
-                glassTargetX -= dx;
-                glassTargetY -= dy;
-                glassScrollShiftX -= dx;
-                glassScrollShiftY -= dy;
-                glass.setTranslationX(glass.getTranslationX() - dx);
-                glass.setTranslationY(glass.getTranslationY() - dy);
+                if (glassShown) {
+                    glassTargetX -= dx;
+                    glassTargetY -= dy;
+                    glassScrollShiftX -= dx;
+                    glassScrollShiftY -= dy;
+                    glass.setTranslationX(glass.getTranslationX() - dx);
+                    glass.setTranslationY(glass.getTranslationY() - dy);
+                }
+                if (spotlightShown && spotlight != null) {
+                    spotlightTargetX -= dx;
+                    spotlightTargetY -= dy;
+                    spotlightScrollShiftX -= dx;
+                    spotlightScrollShiftY -= dy;
+                    spotlight.setTranslationX(spotlight.getTranslationX() - dx);
+                    spotlight.setTranslationY(spotlight.getTranslationY() - dy);
+                }
             }
         });
 
@@ -635,6 +685,30 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         });
         applyGlassSpring(false);
+
+        spotlight = findViewById(R.id.spotlight);
+        if (spotlight != null) {
+            if (spotlightGlow) {
+                spotlight.setVisibility(View.VISIBLE);
+                spotlight.setAlpha(0f);
+                spotlightSpringX = new SpringAnimation(spotlight, new FloatPropertyCompat<View>("spotlightContentX") {
+                    @Override public float getValue(View v) { return v.getTranslationX() - spotlightScrollShiftX; }
+                    @Override public void setValue(View v, float value) { v.setTranslationX(value + spotlightScrollShiftX); }
+                });
+                spotlightSpringY = new SpringAnimation(spotlight, new FloatPropertyCompat<View>("spotlightContentY") {
+                    @Override public float getValue(View v) { return v.getTranslationY() - spotlightScrollShiftY; }
+                    @Override public void setValue(View v, float value) { v.setTranslationY(value + spotlightScrollShiftY); }
+                });
+                for (SpringAnimation s : new SpringAnimation[]{spotlightSpringX, spotlightSpringY}) {
+                    s.setSpring(new SpringForce()
+                            .setStiffness(reducedMotion ? 900f : 520f)
+                            .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY));
+                    s.setMinimumVisibleChange(1f);
+                }
+            } else {
+                spotlight.setVisibility(View.GONE);
+            }
+        }
 
         btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
@@ -685,11 +759,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
 
-        // Hide the glass when focus leaves the tiles (and All apps card in single-row mode).
+        // Hide the glass & spotlight when focus leaves tiles, and aim Sharingan gaze at focused view.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
             boolean onTile = newF != null && (newF.getId() == R.id.card
                     || (singleRowBar && newF.getId() == R.id.btnLibrary));
-            if (!onTile) hideGlass();
+            if (!onTile) {
+                hideGlass();
+                hideSpotlight();
+            }
+            if (heroEyeWallpaper && sharinganWallpaper != null && newF != null && newF.isShown()
+                    && newF.getWidth() > 0 && newF.getHeight() > 0) {
+                lookAtView(newF);
+            }
         });
 
         packageFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -709,6 +790,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         // Not after recreate(): the launch intent survives it and would open the settings again.
         if (savedInstanceState == null) openLauncherSettingsIfAsked(getIntent());
+        if (savedInstanceState == null && heroEyeWallpaper && sharinganWallpaper != null) {
+            handler.postDelayed(() -> {
+                if (heroEyeWallpaper && sharinganWallpaper != null && !splashShowing && !isDestroyed()) {
+                    sharinganWallpaper.triggerWakeSpin();
+                }
+            }, 200L);
+        }
     }
 
     private boolean openLauncherSettingsIfAsked(Intent intent) {
@@ -774,6 +862,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         weather.refreshIfStale(activeConfig);
         applyWeatherAndSolar();
         wallpaperPlayer.start();
+        if (clockRefresh != null) clockRefresh.start();
+        if (rollingSeconds != null && rollingSeconds.getVisibility() == View.VISIBLE) rollingSeconds.start();
+        if (heroEyeWallpaper && sharinganWallpaper != null) sharinganWallpaper.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && diya != null) {
             diya.start();
@@ -807,6 +898,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             glassScrollShiftX = 0f;
             glassScrollShiftY = 0f;
             glass.setAlpha(0f);
+            spotlightShown = false;
+            spotlightScrollShiftX = 0f;
+            spotlightScrollShiftY = 0f;
+            if (spotlight != null) spotlight.setAlpha(0f);
             heroShown = false;
             hero.setAlpha(0f);
             ambient.setAlpha(0f);
@@ -882,6 +977,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
+        if (clockRefresh != null) clockRefresh.stop();
+        if (rollingSeconds != null) rollingSeconds.stop();
+        if (sharinganWallpaper != null) sharinganWallpaper.stop();
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
@@ -916,9 +1014,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (bootSplash) unregisterReceiver(screenOnReceiver);
+        if (bootSplash || heroEyeWallpaper) unregisterReceiver(screenOnReceiver);
         if (sounds != null) sounds.release();
         wallpaperPlayer.close();
+        if (sharinganWallpaper != null) sharinganWallpaper.close();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (tim != null) tim.unregisterCallback(inputCallback);
@@ -997,6 +1096,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         handler.removeCallbacks(endSplash);
         splash.animate().alpha(0f).setDuration(ms)
                 .withEndAction(() -> splash.setVisibility(View.GONE)).start();
+        if (heroEyeWallpaper && sharinganWallpaper != null) {
+            sharinganWallpaper.triggerWakeSpin();
+        }
     }
 
     private static boolean isVolumeKey(int code) {
@@ -1127,6 +1229,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (adapter.hasEmptySlots()) reloadTiles();   // every position must hold a tile that can move
         reordering = true;
         orderAtStart = adapter.movableKeys();
+        hideSpotlight();
         glass.setAccent(REORDER_ACCENT);
         btnReorder.setActivated(true);
         if (animations) {
@@ -1337,6 +1440,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         if (fillDockLeavesSlots) reloadTiles();   // the empty dock slots left out while reordering come back
+        if (spotlightGlow) grid.post(this::refitGlass);
     }
 
     /**
@@ -1416,8 +1520,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void onBackPressed() {
-        // Home screen: Back goes nowhere.
+        if (!reordering && !splashShowing && openPopup == null && appLibrary == null && backOpensClock) {
+            startActivity(new Intent(this, ClockActivity.class));
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        }
     }
 
     // ---- glass highlight -------------------------------------------------------------------------
@@ -1528,7 +1636,46 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         tileRect.set(layoutLeft, layoutTop, layoutLeft + card.getWidth(), layoutTop + card.getHeight());
         float centerX = layoutLeft + card.getWidth() / 2f;
         float centerY = layoutTop + card.getHeight() / 2f;
-        float targetLiftY = carried ? -8f * density : (advancedEffects ? -4f * density : 0f);
+        float targetLiftY = carried ? -8f * density : ((advancedEffects || whiteLogoIcons) ? -4f * density : 0f);
+        if (heroEyeWallpaper && sharinganWallpaper != null) {
+            sharinganWallpaper.lookAt(centerX, centerY + targetLiftY);
+        }
+        if (spotlightGlow && spotlight != null && !reordering) {
+            float sw = Math.max(248f * density, card.getWidth() * 2.15f);
+            float sh = Math.max(168f * density, card.getHeight() * 1.68f);
+            ViewGroup.LayoutParams slp = spotlight.getLayoutParams();
+            if (slp.width != (int) sw || slp.height != (int) sh) {
+                slp.width = (int) sw;
+                slp.height = (int) sh;
+                spotlight.setLayoutParams(slp);
+            }
+            float sx = centerX - sw / 2f;
+            float sy = centerY + targetLiftY - sh / 2f;
+            spotlightTargetX = sx;
+            spotlightTargetY = sy;
+            if (!spotlightShown) {
+                if (spotlightSpringX != null) spotlightSpringX.cancel();
+                if (spotlightSpringY != null) spotlightSpringY.cancel();
+                spotlight.setTranslationX(sx);
+                spotlight.setTranslationY(sy);
+                if (animations) spotlight.animate().alpha(1f).setDuration(reducedMotion ? 110 : 180).start();
+                else spotlight.setAlpha(1f);
+                spotlightShown = true;
+            } else if (!animations) {
+                if (spotlightSpringX != null) spotlightSpringX.cancel();
+                if (spotlightSpringY != null) spotlightSpringY.cancel();
+                spotlight.setTranslationX(sx);
+                spotlight.setTranslationY(sy);
+            } else {
+                if (spotlightSpringX != null) spotlightSpringX.animateToFinalPosition(sx - spotlightScrollShiftX);
+                if (spotlightSpringY != null) spotlightSpringY.animateToFinalPosition(sy - spotlightScrollShiftY);
+            }
+            if (whiteLogoIcons) {
+                glassCardW = card.getWidth();
+                hideGlass();
+                return;
+            }
+        }
         float pad = 6f * density;
         float scale = adapter.focusScale() * (carried ? 1.04f : 1f);
         float w = card.getWidth() * scale + 2 * pad;
@@ -1591,7 +1738,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float scale = adapter.focusScale() * (carried ? 1.04f : 1f);
         int w = (int) (card.getWidth() * scale + 2 * pad);
         int h = (int) (card.getHeight() * scale + 2 * pad);
-        if (!glassShown || card.getWidth() != glassCardW || glass.getWidth() != w || glass.getHeight() != h || carried) {
+        boolean useSpotOnly = spotlightGlow && whiteLogoIcons && !reordering;
+        boolean shown = useSpotOnly ? spotlightShown : glassShown;
+        if (!shown || card.getWidth() != glassCardW || (!useSpotOnly && (glass.getWidth() != w || glass.getHeight() != h)) || carried) {
             onTileFocused(pos, card);
         }
     }
@@ -1900,6 +2049,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         glass.animate().cancel();
         if (animations) glass.animate().alpha(0f).setDuration(160).start();
         else glass.setAlpha(0f);
+    }
+
+    private void hideSpotlight() {
+        if (!spotlightShown || spotlight == null) return;
+        spotlightShown = false;
+        spotlightScrollShiftX = 0f;
+        spotlightScrollShiftY = 0f;
+        spotlight.animate().cancel();
+        if (animations) spotlight.animate().alpha(0f).setDuration(180).start();
+        else spotlight.setAlpha(0f);
+    }
+
+    private void lookAtView(View target) {
+        if (!heroEyeWallpaper || sharinganWallpaper == null || target == null) return;
+        int[] targetLoc = new int[2];
+        int[] wallLoc = new int[2];
+        target.getLocationInWindow(targetLoc);
+        sharinganWallpaper.getLocationInWindow(wallLoc);
+        float cx = (targetLoc[0] - wallLoc[0]) + target.getWidth() * 0.5f;
+        float cy = (targetLoc[1] - wallLoc[1]) + target.getHeight() * 0.5f;
+        sharinganWallpaper.lookAt(cx, cy);
     }
 
     // ---- optional system stats (config.xml show_stats) --------------------------------------------

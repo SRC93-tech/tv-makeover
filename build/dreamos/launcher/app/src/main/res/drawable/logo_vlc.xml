@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- VLC striped traffic cone silhouette -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M22.2,6.5C22.7,5.2 25.3,5.2 25.8,6.5L28.8,15.5L19.2,15.5Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M18.1,19.0L29.9,19.0L32.0,25.5L16.0,25.5Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14.8,29.0L33.2,29.0L35.4,35.5L12.6,35.5Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M8.5,37.0C7.1,37.0 6.0,38.1 6.0,39.5L6.0,40.5C6.0,41.6 6.9,42.5 8.0,42.5L40.0,42.5C41.1,42.5 42.0,41.6 42.0,40.5L42.0,39.5C42.0,38.1 40.9,37.0 39.5,37.0Z" />
+</vector>
+

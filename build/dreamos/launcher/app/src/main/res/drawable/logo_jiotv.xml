@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- JioTV+ live broadcast screen + bold play + plus -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M8,10C5.8,10 4,11.8 4,14L4,32C4,34.2 5.8,36 8,36L16,36L16,39L32,39L32,36L40,36C42.2,36 44,34.2 44,32L44,14C44,11.8 42.2,10 40,10L8,10ZM8,13.5L40,13.5C40.3,13.5 40.5,13.7 40.5,14L40.5,32C40.5,32.3 40.3,32.5 40,32.5L8,32.5C7.7,32.5 7.5,32.3 7.5,32L7.5,14C7.5,13.7 7.7,13.5 8,13.5ZM19,17.5L29.5,23L19,28.5Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M36,16.5L38.2,16.5L38.2,19.3L41,19.3L41,21.5L38.2,21.5L38.2,24.3L36,24.3L36,21.5L33.2,21.5L33.2,19.3L36,19.3Z" />
+</vector>
+

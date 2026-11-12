@@ -5,6 +5,14 @@
     android:layout_height="match_parent"
     android:background="#FF000000">
 
+    <!-- Live Sharingan hero backdrop (config.xml hero_eye_wallpaper); sits behind sky/ambient glow. -->
+    <com.gathin.tvhome.SharinganWallpaperView
+        android:id="@+id/sharinganWallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:importantForAccessibility="no" />
+
     <!-- builtin_wallpaper's blurred twin (home_wallpaper_blur.jpg), faded in over it while the grid is scrolled
          below the dock. Set from code, so nothing is decoded when the built-in wallpaper is off. -->
     <ImageView
@@ -157,6 +165,14 @@
             android:visibility="gone" />
     </LinearLayout>
 
+    <com.gathin.tvhome.SpotlightGlowView
+        android:id="@+id/spotlight"
+        android:layout_width="220dp"
+        android:layout_height="150dp"
+        android:alpha="0"
+        android:visibility="gone"
+        android:importantForAccessibility="no" />
+
     <LinearLayout
         android:id="@+id/mainColumn"
         android:layout_width="match_parent"
@@ -237,6 +253,7 @@
                         android:layout_height="wrap_content"
                         android:format12Hour="h:mm a"
                         android:format24Hour="h:mm a"
+                        android:fontFeatureSettings="tnum"
                         android:textColor="#FFFFFFFF"
                         android:textSize="18sp"
                         android:fontFamily="@font/inter_tight_medium"
@@ -244,6 +261,30 @@
                         android:shadowColor="#66000000"
                         android:shadowDy="1"
                         android:shadowRadius="6" />
+
+                    <com.gathin.tvhome.RollingSecondsView
+                        android:id="@+id/rollingSeconds"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="1dp"
+                        android:visibility="gone" />
+
+                    <TextClock
+                        android:id="@+id/ampmInline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:format12Hour="a"
+                        android:format24Hour=""
+                        android:textColor="#CCFFFFFF"
+                        android:textSize="14sp"
+                        android:fontFamily="@font/inter_tight_medium"
+                        android:textAllCaps="true"
+                        android:includeFontPadding="false"
+                        android:shadowColor="#66000000"
+                        android:shadowDy="1"
+                        android:shadowRadius="6"
+                        android:visibility="gone" />
 
                     <TextClock
                         android:id="@+id/homeDate"

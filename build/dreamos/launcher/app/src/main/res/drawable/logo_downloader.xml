@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Downloader clean arrow into tray -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M21.8,7L26.2,7L26.2,23.5L32.8,17.0L35.9,20.1L24.0,32.0L12.1,20.1L15.2,17.0L21.8,23.5Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9,32L13.5,32L13.5,36.5L34.5,36.5L34.5,32L39,32L39,38.5C39,40.4 37.4,42 35.5,42L12.5,42C10.6,42 9,40.4 9,38.5Z" />
+</vector>
+

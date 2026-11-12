@@ -4,6 +4,12 @@
   "wallpaper_dim": 0,
   "reduced_motion": true,
   "ambient_glow": false,
-  "advanced_effects": false
+  "advanced_effects": false,
+  "hero_eye_wallpaper": false,
+  "white_logo_icons": false,
+  "spotlight_glow": false,
+  "rolling_seconds": false,
+  "app_open_zoom": false,
+  "back_opens_clock": false
 }
 

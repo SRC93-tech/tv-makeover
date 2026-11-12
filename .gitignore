@@ -40,6 +40,7 @@ build/dreamos/launcher/replay_pid*.log
 *adbkey*
 *.jpg
 !build/vu-fast-alpine/wallpapers/*.jpg
+!build/dreamos/launcher/app/src/main/res/drawable-nodpi/itachi_hero_bg.jpg
 *.jpeg
 *.png
 .env

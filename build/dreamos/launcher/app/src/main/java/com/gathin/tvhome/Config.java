@@ -128,6 +128,20 @@ final class Config {
     final String weatherUnit;
     /** "auto" (sunset-sunrise), "night" (always dark), or "off". */
     final String nightTheme;
+    /** Animated Sharingan eye-tracking hero portrait. */
+    final boolean heroEyeWallpaper;
+    /** Monochrome white logo-only app icons with no card boxes. */
+    final boolean whiteLogoIcons;
+    /** Soft radial spotlight glow tracking the focused icon. */
+    final boolean spotlightGlow;
+    /** Rolling dial seconds beside Home clock. */
+    final boolean rollingSeconds;
+    /** Zoom-in launch transition when opening an app. */
+    final boolean appOpenZoom;
+    /** Back key on idle Home opens ClockActivity. */
+    final boolean backOpensClock;
+    /** "12", "24", or "system". */
+    final String clockFormat;
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, String liveTvPackage,
                    String liveTvAction, Map<String, String> launchActions, Map<String, String> appLabels,
@@ -141,7 +155,9 @@ final class Config {
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, String brandName, boolean bootSplash,
                    boolean ambientGlow, boolean headerPills, int dockTopDp, boolean builtinWallpaper,
                    boolean uiSounds, boolean weatherEnabled, String weatherCity, String weatherLat, String weatherLon,
-                   String weatherUnit, String nightTheme) {
+                   String weatherUnit, String nightTheme, boolean heroEyeWallpaper, boolean whiteLogoIcons,
+                   boolean spotlightGlow, boolean rollingSeconds, boolean appOpenZoom, boolean backOpensClock,
+                   String clockFormat) {
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
         this.dockApps = Collections.unmodifiableList(dockApps);
@@ -197,6 +213,13 @@ final class Config {
         this.weatherLon = weatherLon;
         this.weatherUnit = weatherUnit;
         this.nightTheme = nightTheme;
+        this.heroEyeWallpaper = heroEyeWallpaper;
+        this.whiteLogoIcons = whiteLogoIcons;
+        this.spotlightGlow = spotlightGlow;
+        this.rollingSeconds = rollingSeconds;
+        this.appOpenZoom = appOpenZoom;
+        this.backOpensClock = backOpensClock;
+        this.clockFormat = clockFormat;
     }
 
     /** The folder the theme tools push into; null when external storage is unavailable. */
@@ -253,6 +276,13 @@ final class Config {
         String weatherLon = res.getString(R.string.weather_lon).trim();
         String weatherUnit = res.getString(R.string.weather_unit).trim();
         String nightTheme = res.getString(R.string.night_theme).trim();
+        boolean heroEyeWallpaper = res.getBoolean(R.bool.hero_eye_wallpaper);
+        boolean whiteLogoIcons = res.getBoolean(R.bool.white_logo_icons);
+        boolean spotlightGlow = res.getBoolean(R.bool.spotlight_glow);
+        boolean rollingSeconds = res.getBoolean(R.bool.rolling_seconds);
+        boolean appOpenZoom = res.getBoolean(R.bool.app_open_zoom);
+        boolean backOpensClock = res.getBoolean(R.bool.back_opens_clock);
+        String clockFormat = res.getString(R.string.clock_format).trim();
         boolean applied = false;
 
         File dir = dir(ctx);
@@ -315,6 +345,13 @@ final class Config {
             weatherLon = string(json, "weather_lon", weatherLon);
             weatherUnit = normalizeUnit(string(json, "weather_unit", string(json, "temperature", weatherUnit)));
             nightTheme = normalizeNightTheme(string(json, "night_theme", string(json, "theme", nightTheme)));
+            heroEyeWallpaper = bool(json, "hero_eye_wallpaper", heroEyeWallpaper);
+            whiteLogoIcons = bool(json, "white_logo_icons", whiteLogoIcons);
+            spotlightGlow = bool(json, "spotlight_glow", spotlightGlow);
+            rollingSeconds = bool(json, "rolling_seconds", rollingSeconds);
+            appOpenZoom = bool(json, "app_open_zoom", appOpenZoom);
+            backOpensClock = bool(json, "back_opens_clock", backOpensClock);
+            clockFormat = string(json, "clock_format", clockFormat);
         }
         // A theme push or reset invalidates choices made on the TV. On first use, remember the
         // current theme without clearing choices from an older launcher version.
@@ -383,7 +420,8 @@ final class Config {
                 festival, inputKeycodes, appKeys, json == null ? Collections.emptyList() : raceCalendar(json), cinematic,
                 brandName, bootSplash && !brandName.isEmpty(), ambientGlow, headerPills, dockTopDp, builtinWallpaper,
                 uiSounds, weatherEnabled, weatherCity, weatherLat, weatherLon,
-                normalizeUnit(weatherUnit), normalizeNightTheme(nightTheme));
+                normalizeUnit(weatherUnit), normalizeNightTheme(nightTheme), heroEyeWallpaper, whiteLogoIcons,
+                spotlightGlow, rollingSeconds, appOpenZoom, backOpensClock, clockFormat);
     }
 
     private static String normalizeUnit(String u) {

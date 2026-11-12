@@ -31,6 +31,7 @@ public class ClockDream extends DreamService {
     private TextView dreamWeather;
     private Weather weather;
     private Config activeConfig;
+    private ClockRefresh clockRefresh;
     private final Weather.Listener weatherListener = this::updateWeather;
     private GradientDrawable glow;
     private int colorIndex;
@@ -55,10 +56,12 @@ public class ClockDream extends DreamService {
         setContentView(R.layout.dream_clock);
 
         content = findViewById(R.id.dreamContent);
+        clockRefresh = new ClockRefresh(content);
         dreamWeatherRow = findViewById(R.id.dreamWeatherRow);
         dreamWeatherIcon = findViewById(R.id.dreamWeatherIcon);
         dreamWeather = findViewById(R.id.dreamWeather);
         activeConfig = Config.load(this);
+        ClockFormat.apply(getWindow().getDecorView(), activeConfig.clockFormat);
         weather = Weather.get(this);
         updateWeather();
         View ambient = findViewById(R.id.dreamAmbient);
@@ -80,6 +83,7 @@ public class ClockDream extends DreamService {
             weather.refreshIfStale(activeConfig);
             updateWeather();
         }
+        if (clockRefresh != null) clockRefresh.start();
         content.post(() -> {
             placeClock();
             content.animate().alpha(1f).setDuration(1200).start();
@@ -90,6 +94,7 @@ public class ClockDream extends DreamService {
     @Override
     public void onDreamingStopped() {
         handler.removeCallbacks(tick);
+        if (clockRefresh != null) clockRefresh.stop();
         if (weather != null) weather.removeListener(weatherListener);
         super.onDreamingStopped();
     }
@@ -97,6 +102,7 @@ public class ClockDream extends DreamService {
     @Override
     public void onDetachedFromWindow() {
         handler.removeCallbacks(tick);
+        if (clockRefresh != null) clockRefresh.stop();
         if (weather != null) weather.removeListener(weatherListener);
         super.onDetachedFromWindow();
     }

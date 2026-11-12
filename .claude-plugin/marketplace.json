@@ -1,14 +1,14 @@
 {
   "name": "tv-makeover-skills",
   "owner": {
-    "name": "paisanos-io",
-    "url": "https://github.com/paisanos-io"
+    "name": "SRC93-tech",
+    "url": "https://github.com/SRC93-tech"
   },
   "plugins": [
     {
       "name": "tv-makeover",
       "source": ".",
-      "description": "Make over any Android TV / Google TV: debloat, Apple-TV-style launcher, custom design from Figma, UI sounds."
+      "description": "Custom ultra-fast Android TV launcher with single-row bar, smooth reorder, weather icons, quick Inputs/Wi-Fi pills, and safe TV debloat profiles."
     }
   ]
 }

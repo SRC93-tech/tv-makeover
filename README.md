@@ -1,152 +1,77 @@
 # tv-makeover
 
-Turn a slow, ad-filled Android TV or Google TV into a clean, fast, branded one, from a computer on the same
-Wi-Fi, with an AI coding agent doing the work: Claude Code, Codex, or any agent that can run shell commands.
+Custom lightweight Android TV launcher and performance-tuning toolkit designed to make entry-level and mid-range Android TVs fast, ad-free, and easy to navigate.
 
-It finds the TV on your network, backs it up, measures why it is slow, disables telemetry, ads and unused apps in
-small verified batches, replaces the home screen with a light Apple-TV-style launcher built from a **template**,
-can implement your own design from Figma to the pixel, and adds startup and navigation sounds. Nothing is rooted,
-flashed or uninstalled: every change can be undone with one command.
+Maintained at [SRC93-tech/tv-makeover](https://github.com/SRC93-tech/tv-makeover). Every TV tweak uses reversible ADB commands (`pm disable-user`, system animation scales, and default Home assignment) without root or flashing.
 
-Built on [cleanyourtv](https://github.com/Gathin23/cleanyourtv) (MIT), which provides the ADB tools, the debloat
-lists for 123 TVs and the launcher.
+## Launcher Highlights
 
-## What you need
+- **Single Horizontal App Bar + All Apps Card**: All home apps sit in a single bottom-aligned scrollable strip ending with a frosted **All apps** card that opens the full app library dialog.
+- **Smooth App Reordering**: Enter reorder mode from **Settings → Reorder apps** or by long-pressing **OK** on any app tile (**Move / Rearrange**). The carried tile lifts while neighbors smoothly slide and dim, guided by a floating hint pill and `GlassView` focus tracking.
+- **Personal Header & Live Weather**:
+  - Customizable TV title, time-of-day greeting, and **12-hour AM/PM clock** with inline date.
+  - **Open-Meteo live weather** (no API key required) with condition vector icons (sun, moon, partly cloudy, cloudy, fog, rain, snow, thunderstorm) across both Home and the `ClockDream` screensaver, plus optional solar sky tinting.
+- **Quick Access Pills & Single-Tap Settings**: Top-right **Inputs** switcher, live **Wi-Fi** status pill (connected SSID with green/red indicator dot), and a single-tap **Settings** menu (*Launcher settings*, *TV system settings*, *Module cards*, *Reorder apps*).
+- **Low-RAM Tuned Mode**: Built-in `reduced_motion` support via runtime `config.json` disables expensive full-screen glow/blur layers while keeping smooth focus transitions responsive even on `925 MB` RAM TVs.
 
-- A computer on the same Wi-Fi as the TV with Python 3, git and ffmpeg (for sounds).
-- To build the launcher: JDK 17 or newer and the Android SDK (platform 34). `scripts/doctor.sh` checks it all.
-- On the TV: developer mode and USB debugging switched on (see the tutorial below; it takes two minutes).
-- Works with Android TV and Google TV (TCL, Hitachi, Philips, Sony, Xiaomi, Hisense Android models, Onn,
-  Chromecast with Google TV, Nvidia Shield...). Not with Samsung Tizen, LG webOS, Roku or recent Fire TV OS.
+## Tested TVs & Real Results
 
-## Tutorial: switch on debugging on your TV
+| TV Profile | Platform / OS | Improvements Applied | Measured Impact |
+|---|---|---|---|
+| **Vu Smart 2K ATV4** (`vu-hamamatsucho`) | MediaTek m5621 · Android TV 9 · `~925 MB` RAM · `720p` | Personalized launcher + `vu-fast-alpine` (`reduced_motion: true`), 22 bloat/voice packages disabled (`katniss`, recommendations, backdrop), `0.5x` animation scales, `eth0` DHCP fix, AOT `speed` compile | **3.5x faster** p95 key response (`95.6 ms → 27.3 ms`), **6.2x faster** navigation (`1,224 ms → 198 ms`), **`0.0%` frame jank**, idle CPU **`52.2% → 2.2%`**, return-to-home **`80 ms` p50** |
+| **Skyworth U2** (`skyworth-globe`) | MediaTek MT5891 · Android TV 8.0 · `~1.9 GB` RAM · `1080p` UI | Personalized launcher + full animations, Alpine wallpaper rotation (`15 min`), debloat batches 1–4, `ClockDream` screensaver, `0.5x` scales | Idle `MemFree` **`55 MB → 160+ MB`**, stock launcher/recommendations/backdrop removed from memory |
 
-You do this once, with the TV remote. Nothing changes on the TV until the agent asks you to accept it.
+See [`tvs/vu-hamamatsucho/`](tvs/vu-hamamatsucho/) and [`tvs/skyworth-globe/`](tvs/skyworth-globe/) for package lists and firmware quirks.
 
-**1. Unlock Developer options.** Open Settings (the gear icon, or the gear button on the remote) and go to the
-"About" screen. Its place depends on the TV:
+## Quick Start (Build & Install over Wi-Fi)
 
-| Your TV | Where "About" is |
-|---|---|
-| Android TV (TCL, Hitachi, Philips, Sony, Xiaomi, Sharp, Nvidia Shield...) | Settings > Device Preferences > About |
-| Google TV (newer Sony, TCL, Hisense, Chromecast with Google TV, Onn...) | Settings > System > About |
-| Older Sony Bravia | Settings > Device Preferences > About (or Settings > About) |
-| Xiaomi Mi Box / Mi TV with PatchWall | Settings > Device Preferences > About |
+### Prerequisites
 
-On that screen, highlight **Build** (on Google TV: **Android TV OS build**) and press **OK seven times**. A message
-counts down and then says "You are now a developer!". If the TV asks for a PIN, it is the TV's parental-control
-or account PIN.
+- **Computer** on the same Wi-Fi network as the TV with Python 3, JDK 17+ (or Android Studio's JBR), and Android SDK (`platform 34`).
+- **TV**: **Settings → Device Preferences → About → Build** (press OK 7 times to unlock Developer options) → **Developer options → USB debugging ON** (and Network/ADB debugging if shown) → accept *"Always allow from this computer"* when prompted.
 
-**2. Switch on USB debugging.** Go back one screen. **Developer options** is now listed there (Device Preferences
-on Android TV, System on Google TV). Open it and switch on **USB debugging**. If you also see **Network debugging**
-or **ADB debugging**, switch that on too. Despite the name, this works over Wi-Fi: no cable needed.
+### Install Prebuilt APK or Build From Source
 
-**3. Find the TV's IP address** (the agent can usually find it on its own): Settings > Network & Internet >
-your Wi-Fi network; the IP address is near the bottom, e.g. `192.168.1.23`. Make sure the computer is on the
-same Wi-Fi network: some routers keep their 2.4 GHz and 5 GHz networks apart.
+Use [`install-apk.ps1`](install-apk.ps1) on Windows:
 
-**4. Accept the computer.** When the agent connects, the TV shows "Allow USB debugging?". Tick
-**"Always allow from this computer"**, then press **Allow**. A plain Allow only lasts one connection, and the
-prompt would keep coming back.
+```powershell
+# Install the built release APK onto a TV on your LAN
+.\install-apk.ps1 -TvHost 192.168.x.x
 
-**If port 5555 stays closed (some Google TV 12+ models):** in Developer options open **Wireless debugging**,
-switch it on, choose **Pair device with pairing code**, and tell the agent the code and the two port numbers
-shown. Wireless debugging switches itself off whenever the TV's Wi-Fi drops.
+# Or rebuild from source first, then push, install, AOT-compile, and launch
+.\install-apk.ps1 -TvHost 192.168.x.x -Build
+```
 
-**When you are done:** Developer options > switch **USB debugging** (and Network/Wireless debugging) **off**, and
-optionally "Revoke USB debugging authorisations". The agent will remind you: while debugging is on, anyone on
-your Wi-Fi network could connect to the TV.
+You can also grab the latest prebuilt APK directly from [GitHub Releases](https://github.com/SRC93-tech/tv-makeover/releases).
 
-## Install for your agent
+### Build & Run Unit Tests Manually
 
-Clone it (`git clone https://github.com/paisanos-io/tv-makeover`), then:
+```powershell
+cd build\dreamos\launcher
+.\gradlew.bat testDebugUnitTest assembleRelease
+```
 
-| Agent | How |
-|---|---|
-| Claude Code | `/plugin marketplace add paisanos-io/tv-makeover` then `/plugin install tv-makeover@tv-makeover-skills`, or copy `skills/*` into `~/.claude/skills/` |
-| Codex | Open the repo folder in Codex (it reads `AGENTS.md`), or copy `skills/*` into `~/.codex/skills/` |
-| Any other agent | Open the repo and point the agent at `AGENTS.md`; the skills are plain `SKILL.md` files |
+## Customization
 
-Inside the skills, `<repo>` means the cloned repo and `<skill>` the skill's folder, so the scripts resolve the same
-way for every agent.
+- **Static defaults**: Edit [`build/dreamos/launcher/app/src/main/res/values/config.xml`](build/dreamos/launcher/app/src/main/res/values/config.xml) (`brand_name`, `greeting_name`, `single_row_bar`, `weather_city`/`weather_lat`/`weather_lon`, `header_pills`, `dock_apps`, `hidden_apps`, `reduced_motion`).
+- **Per-TV runtime overrides & wallpapers (no rebuild required)**: Place a `config.json` and wallpaper images in a theme folder (such as [`build/vu-fast-alpine/`](build/vu-fast-alpine/)) and push with `build/dreamos/tools/theme.ps1` (or `theme.sh`).
 
-## Use it
-
-Ask in your own words, for example:
-
-- "My TCL TV is slow and full of ads, make it look like an Apple TV"
-- "Connect to my TV over Wi-Fi and tell me why YouTube stutters"
-- "Put the DreamOS template on my Xiaomi with Netflix, YouTube, Disney+ and Max in the dock"
-- "My TV is a 2017 box with 1 GB of RAM, make it as fast as possible"
-- "Make the TV's home screen exactly like this Figma frame: <link>"
-- "These three mp3s are the startup, move and select sounds"
-
-| Skill | Does |
-|---|---|
-| `android-tv-makeover` | The whole flow, start to finish, including closing network ADB at the end |
-| `android-tv-debloat` | Find and connect to the TV, back up, diagnose, debloat in batches, extreme performance mode |
-| `android-tv-launcher` | Build, configure and install the launcher from a template; name, splash, dock, inputs |
-| `android-tv-launcher-design` | Turn a design (Figma, mockup or brief) into a template, verify it to the pixel, measure its GPU cost |
-| `android-tv-ui-sounds` | Generate, prepare and wire startup, focus-move and select sounds |
-
-## What is in the repo
+## Repository Structure
 
 ```text
-AGENTS.md    instructions for any coding agent (CLAUDE.md imports it)
-skills/      the five skills, with their scripts and references
-templates/   looks for the home screen: dreamos, starter, extreme
-tvs/         124 tested TV profiles (123 from cleanyourtv + Hitachi CDH-LE504KSMART20) and INDEX.md
-scripts/     doctor, apply-template, extreme-performance, find-tv-profile, sync-tv-profiles, ...
+build/dreamos/launcher/   Android launcher source (com.gathin.tvhome), layouts, weather, and unit tests
+build/dreamos/tools/      Python ADB-over-TCP client (tv.py, b64push.py), theme & restore scripts
+build/vu-fast-alpine/     Low-RAM runtime theme config and Alpine wallpaper set
+tvs/                      Per-model TV hardware profiles, firmware notes, and safe debloat lists
+skills/ & scripts/        Agent playbooks and automation helpers
+templates/                Launcher UI patch templates (dreamos, starter, extreme)
+install-apk.ps1           One-command Windows ADB installer / rebuild-and-deploy script
 ```
 
-### Templates and TV profiles
+> **Security reminder:** Switch **USB / Network debugging** off on the TV once you finish configuring it so port `5555` is not left open on your local network. Backups, local screenshots, keystores, and ADB keys are excluded via [`.gitignore`](.gitignore).
 
-A **template** is how the home screen looks; a **TV profile** is what a given model needs (what is safe to
-disable, its Live TV app, tiles to hide, firmware quirks). Any template works with any profile:
+## License & Attribution
 
-```bash
-scripts/doctor.sh                                    # does this computer have what it needs?
-scripts/find-tv-profile.sh tcl beyondtv android 11   # the closest tested TVs to yours
-TV_HOST=192.168.x.x scripts/apply-template.sh dreamos --tv <profile> \
-  --dock com.netflix.ninja,com.google.android.youtube.tv,com.disney.disneyplus,com.wbd.stream --install
-```
-
-| Template | Look |
-|---|---|
-| `dreamos` | Photo wallpaper that blurs over the app grid, glass dock and settings button, Inter Tight, DreamOS boot splash and sounds |
-| `starter` | cleanyourtv's stock look with every branding switch added but off: the base for your own design |
-| `extreme` | For very old or weak TVs: the stock layout with every animation, effect, wallpaper and sound off |
-
-Templates are drawn for a 1920x1080 frame and render the same on TVs that report a different screen density
-(`design_width_dp`, verified by forcing 240 dpi on a 320 dpi TV). How to make one: `templates/README.md`.
-How to add your TV: `tvs/README.md`.
-
-### Extreme performance mode
-
-For TVs with 1 GB of RAM or less, Mali-400/450-class GPUs or Android 7-9: the `extreme` template plus
-`scripts/extreme-performance.sh`, which turns system animations off, keeps the heavy apps you choose from running
-in the background (they still open normally) and trims caches. It records every value it changes, and `undo`
-puts them back exactly. Run `status` and `--dry-run` first.
-
-## Safety
-
-Packages are disabled with `pm disable-user`, never uninstalled, in small batches with a screenshot and a check
-after each. cleanyourtv's `tools/restore.sh` puts the TV back as it was. At the end the skills ask you to switch
-network ADB off: while it is on, port 5555 is open to every device on your Wi-Fi.
-
-## Measured on a real TV
-
-Hitachi CDH-LE504KSMART20 (TCL BeyondTV, Android 11, Realtek RTD2851, Mali-470, 2 GB): the voice assistant was
-using a third of a CPU core at idle (switching it off took idle CPU from 84% to 95% free); free memory after boot
-went from ~530-600 MB to ~640-690 MB; the DreamOS home runs at 5-9 ms of CPU and ~13-16 ms of GPU per frame.
-Debloating alone did not make apps faster; the launcher, voice and animation changes did.
-
-## Credits and licences
-
-- [cleanyourtv](https://github.com/Gathin23/cleanyourtv) (MIT, (c) 2026 Gathin): ADB tools, the TV lists in `tvs/`
-  and the launcher. The `launcher.patch` files in `templates/` are derived from its code, under the same licence.
-- Settings icon in DreamOS: [Lucide](https://lucide.dev) (ISC). Inter Tight: SIL Open Font License 1.1 (licence
-  file next to it in `templates/dreamos/assets/`).
-- DreamOS's wallpaper and sounds are the owner's artwork. The starter's wallpaper and sounds were generated for
-  this repo (MIT).
-- Everything else: MIT (`LICENSE`).
+- Licensed under the MIT License ([`LICENSE`](LICENSE)).
+- Derived from upstream [tv-makeover](https://github.com/paisanos-io/tv-makeover) and [cleanyourtv](https://github.com/Gathin23/cleanyourtv) (MIT).
+- Weather data provided by [Open-Meteo](https://open-meteo.com/); UI icons from [Lucide](https://lucide.dev) (ISC); Inter Tight font under SIL OFL 1.1.

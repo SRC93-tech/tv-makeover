@@ -1,28 +1,20 @@
-# Instructions for coding agents
+# Agent Instructions
 
-This repo makes over Android TV / Google TV sets from a computer on the same Wi-Fi: diagnose, debloat, install a
-fast launcher from a template, implement designs, add UI sounds. It works with any agent that can run shell
-commands (Claude Code, Codex, others). Everything it does to a TV is reversible.
+This repository (`SRC93-tech/tv-makeover`) maintains our customized Android TV launcher (`com.gathin.tvhome`), TV-specific optimization profiles, wallpapers, and ADB deployment scripts. Every system modification must remain reversible without root.
 
-## Where things are
+## Project Layout
 
-- `skills/<name>/SKILL.md`: step-by-step playbooks. Read the one that matches the task before acting:
-  - `android-tv-makeover`: the whole flow and the close-up (start here if unsure)
-  - `android-tv-debloat`: find and connect to the TV, back up, diagnose, debloat, extreme performance mode
-  - `android-tv-launcher`: build and install the launcher from a template
-  - `android-tv-launcher-design`: implement a design (Figma, mockup, brief) as a template, verify, measure
-  - `android-tv-ui-sounds`: create, prepare and wire startup / move / select sounds
-- `templates/`: looks for the Home screen (`dreamos`, `starter`, `extreme`); see templates/README.md.
-- `tvs/`: 124 tested TV profiles; `tvs/INDEX.md`; `scripts/find-tv-profile.sh` finds the closest one.
-- `scripts/`: `doctor.sh`, `apply-template.sh`, `extreme-performance.sh`, `find-tv-profile.sh`, ...
+- `build/dreamos/launcher/`: Custom Android launcher source code (`MainActivity`, `AppAdapter`, `Weather`, `SkyView`, `ClockDream`, layouts, drawables, and JVM unit tests).
+- `build/dreamos/tools/`: Zero-binary Python ADB-over-TCP tooling (`tv.py`, `b64push.py`, `theme.ps1`, `restore.ps1`).
+- `build/vu-fast-alpine/`: Low-RAM runtime theme (`config.json` with `reduced_motion: true`) and Alpine wallpaper pack.
+- `install-apk.ps1`: Build/push/install/AOT-compile deployment script for Android TVs over Wi-Fi ADB.
+- `tvs/`: Device profiles and verified safe debloat lists (notably `tvs/vu-hamamatsucho/` and `tvs/skyworth-globe/`).
+- `skills/`, `scripts/`, `templates/`: Modular playbooks and template utilities.
 
-In the skills, `<repo>` means this folder and `<skill>` the skill's own folder.
+## Working Rules
 
-## Rules
-
-- Only reversible changes, in small batches, verified with a screenshot or a check after each.
-- Ask the TV's owner before anything that depends on their habits (apps, dock, voice, casting, sounds) and before
-  reboots; say what they will see on the TV.
-- Report measured numbers, before and after, honestly.
-- Never put the owner's IP, Wi-Fi name or account details into files meant to be shared (tvs/, templates/).
-- When done, have the owner switch off network ADB (port 5555 is open to the whole LAN while it is on).
+- Keep changes reversible (`pm disable-user`, reversible `settings put`), apply in small verified batches, and capture screenshots + `logcat` checks after UI or launcher changes.
+- Never run concurrent ADB commands against the same TV host (`tv.py` / `b64push.py` sequentially only).
+- Never commit secrets, keystores, `adbkey*`, local backups (`cleanyourtv/backup/`), build outputs, or unnecessary private device data (`*.jpg`/`*.png` outside explicitly intended wallpaper assets).
+- Always run relevant unit tests (`GridNavigationTest`, `SkyTest`, `OrderTest`, `DockSlotsTest`) and `assembleRelease` before deploying launcher builds.
+- Remind the owner to turn off USB/Network debugging when finished if leaving debugging enabled is unnecessary.

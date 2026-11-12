@@ -4,18 +4,17 @@
     android:height="48dp"
     android:viewportWidth="48"
     android:viewportHeight="48">
-    <!-- Google Play triangle outline + segmented facets -->
+    <!-- Google Play crisp segmented white play triangle with clean facet seams -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M9.6,6.8C9.2,7.3 9.0,7.9 9.0,8.7L9.0,39.3C9.0,40.1 9.2,40.7 9.6,41.2L9.8,41.4L26.9,24.3L26.9,23.9L9.8,6.6Z" />
+        android:pathData="M9.8,8.0 C9.5,8.4 9.3,9.0 9.3,9.7 L9.3,38.3 C9.3,39.0 9.5,39.6 9.8,40.0 L25.6,24.0 Z" />
     <path
-        android:fillColor="#D9FFFFFF"
-        android:pathData="M32.6,30.0L26.9,24.3L26.9,23.9L32.6,18.2L32.8,18.3L39.5,22.1C41.4,23.2 41.4,25.0 39.5,26.1L32.8,29.9Z" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11.6,7.0 L27.0,22.4 L32.0,17.4 L13.4,6.7 C12.6,6.3 12.0,6.5 11.6,7.0 Z" />
     <path
-        android:fillColor="#B3FFFFFF"
-        android:pathData="M32.8,29.9L26.9,24.1L9.6,41.4C10.3,42.1 11.3,42.2 12.5,41.5L32.8,29.9Z" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11.6,41.0 C12.0,41.5 12.6,41.7 13.4,41.3 L32.0,30.6 L27.0,25.6 Z" />
     <path
-        android:fillColor="#E6FFFFFF"
-        android:pathData="M32.8,18.3L12.5,6.7C11.3,6.0 10.3,6.1 9.6,6.8L26.9,24.1L32.8,18.3Z" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M33.6,18.4 L28.4,24.0 L33.6,29.6 L39.2,26.3 C41.0,25.3 41.0,22.7 39.2,21.7 Z" />
 </vector>
-

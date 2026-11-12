@@ -471,11 +471,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             card.setBackground(null);
             ImageView iconView = v.findViewById(R.id.icon);
             android.widget.FrameLayout.LayoutParams ilp = (android.widget.FrameLayout.LayoutParams) iconView.getLayoutParams();
-            int logoPx = Math.round(48 * density);
-            ilp.width = logoPx;
-            ilp.height = logoPx;
+            ilp.width = Math.round(64 * density);
+            ilp.height = Math.round(46 * density);
             ilp.bottomMargin = 0;
             ilp.gravity = android.view.Gravity.CENTER;
+            iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
             iconView.setLayoutParams(ilp);
         }
         View name = v.findViewById(R.id.name);

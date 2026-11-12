@@ -417,6 +417,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
         activeConfig = cfg;
         sky = findViewById(R.id.sky);
+        if (heroEyeWallpaper && sky != null) {
+            root.removeView(sky);
+            sky = null;
+        }
         weatherRow = findViewById(R.id.weatherRow);
         weatherIcon = findViewById(R.id.weatherIcon);
         weatherText = findViewById(R.id.weatherText);
@@ -505,12 +509,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
         if (singleRowBar) {
             gridContainer.setPadding(0, 0, 0, 0);
-            int edgePad = Math.round(63 * density);
+            int edgePad = Math.round(75 * density);
             FrameLayout.LayoutParams gridLp = (FrameLayout.LayoutParams) grid.getLayoutParams();
             gridLp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
             gridLp.gravity = Gravity.BOTTOM;
             grid.setLayoutParams(gridLp);
             grid.setPadding(edgePad, Math.round(14 * density), edgePad, Math.round(14 * density));
+            grid.setHorizontalFadingEdgeEnabled(true);
+            grid.setFadingEdgeLength(Math.round(52 * density));
+            grid.setWillNotDraw(false);
             grid.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false) {
                 @Override
                 protected boolean isLayoutRTL() {

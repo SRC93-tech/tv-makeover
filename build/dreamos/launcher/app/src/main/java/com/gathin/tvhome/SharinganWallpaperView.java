@@ -48,7 +48,8 @@ public class SharinganWallpaperView extends View {
     private final Paint bgPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
 
     private final Paint bottomScrimPaint = new Paint();
-    private final Paint scleraPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint leftScleraPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint rightScleraPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint eyeShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint outerGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint redAuraPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -112,26 +113,26 @@ public class SharinganWallpaperView extends View {
 
     private void initPaints() {
         irisOuterRimPaint.setStyle(Paint.Style.STROKE);
-        irisOuterRimPaint.setColor(0xFF280202);
+        irisOuterRimPaint.setColor(0xD9450308);
 
         ringPaint.setStyle(Paint.Style.STROKE);
-        ringPaint.setColor(0xD91A0404);
+        ringPaint.setColor(0xE01A0204);
 
         pupilPaint.setStyle(Paint.Style.FILL);
-        pupilPaint.setColor(0xFF0A0303);
+        pupilPaint.setColor(0xFF0A0203);
 
         tomoePaint.setStyle(Paint.Style.FILL);
-        tomoePaint.setColor(0xEE0D0202);
+        tomoePaint.setColor(0xF50A0102);
 
         catchlightPaint.setStyle(Paint.Style.FILL);
-        catchlightPaint.setColor(0xEBFFF0F0);
+        catchlightPaint.setColor(0xF5FFFFFF);
 
         eyelidFillPaint.setStyle(Paint.Style.FILL);
         eyelidFillPaint.setColor(0xFF1A1416);
 
         lashRimPaint.setStyle(Paint.Style.STROKE);
         lashRimPaint.setStrokeCap(Paint.Cap.ROUND);
-        lashRimPaint.setColor(0xEE040508);
+        lashRimPaint.setColor(0x66040508);
 
         hairStrandPaint.setStyle(Paint.Style.STROKE);
         hairStrandPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -189,47 +190,55 @@ public class SharinganWallpaperView extends View {
         buildEyeSocketClip(leftEyeClip, leftSocketBounds, ox, oy, imgW, imgH, true);
         buildEyeSocketClip(rightEyeClip, rightSocketBounds, ox, oy, imgW, imgH, false);
 
-        scleraPaint.setShader(new LinearGradient(
-                0f, Math.min(leftSocketBounds.top, rightSocketBounds.top),
-                0f, Math.max(leftSocketBounds.bottom, rightSocketBounds.bottom),
-                new int[]{0xFF56606C, 0xFF7B8796, 0xFF8C98A8},
-                new float[]{0f, 0.48f, 1f},
+        leftScleraPaint.setShader(new RadialGradient(
+                leftSocketBounds.centerX(), leftSocketBounds.centerY() + leftSocketBounds.height() * 0.08f,
+                Math.max(10f, leftSocketBounds.width() * 0.56f),
+                new int[]{0xFF3A3D44, 0xFF272A30, 0xFF101216},
+                new float[]{0.0f, 0.55f, 1.0f},
+                Shader.TileMode.CLAMP));
+
+        rightScleraPaint.setShader(new RadialGradient(
+                rightSocketBounds.centerX() + rightSocketBounds.width() * 0.08f,
+                rightSocketBounds.centerY() + rightSocketBounds.height() * 0.05f,
+                Math.max(10f, rightSocketBounds.width() * 0.52f),
+                new int[]{0xFF40444C, 0xFF282B31, 0xFF101216},
+                new float[]{0.0f, 0.52f, 1.0f},
                 Shader.TileMode.CLAMP));
 
         eyeShadowPaint.setShader(new LinearGradient(
                 0f, Math.min(leftSocketBounds.top, rightSocketBounds.top),
-                0f, Math.min(leftSocketBounds.top, rightSocketBounds.top) + irisRadius * 0.58f,
-                new int[]{0x7A04060A, 0x0004060A},
+                0f, Math.min(leftSocketBounds.top, rightSocketBounds.top) + irisRadius * 0.45f,
+                new int[]{0x5C04060A, 0x0004060A},
                 null,
                 Shader.TileMode.CLAMP));
 
         outerGlowPaint.setShader(new RadialGradient(
-                0f, 0f, irisRadius * 2.15f,
-                new int[]{0x66FF222C, 0x26DC1424, 0x00000000},
-                new float[]{0.20f, 0.62f, 1f},
+                0f, 0f, irisRadius * 2.3f,
+                new int[]{0xAAFF242E, 0x4CE11420, 0x00000000},
+                new float[]{0.18f, 0.60f, 1f},
                 Shader.TileMode.CLAMP));
 
         redAuraPaint.setShader(new RadialGradient(
-                0f, 0f, irisRadius * 1.75f,
-                new int[]{0xFFFF3838, 0x9EE11D24, 0x28B91C1C, 0x00000000},
-                new float[]{0.25f, 0.52f, 0.80f, 1f},
+                0f, 0f, irisRadius * 1.85f,
+                new int[]{0xFFFF454B, 0xCCF51622, 0x48B91C1C, 0x00000000},
+                new float[]{0.24f, 0.50f, 0.80f, 1f},
                 Shader.TileMode.CLAMP));
 
         irisPaint.setShader(new RadialGradient(
                 0f, 0f, irisRadius,
-                new int[]{0xFFFF7A7A, 0xFFFF2424, 0xFFE0101D, 0xFF7F0810},
-                new float[]{0.08f, 0.45f, 0.82f, 1f},
+                new int[]{0xFFFFC4C4, 0xFFFF4545, 0xFFFF1824, 0xFFA60812},
+                new float[]{0.08f, 0.40f, 0.80f, 1f},
                 Shader.TileMode.CLAMP));
 
         bottomScrimPaint.setShader(new LinearGradient(
                 0f, h * 0.65f, 0f, h,
-                new int[]{0x00000000, 0x5A020306, 0xC6020306},
+                new int[]{0x00000000, 0x4D020306, 0xBA020306},
                 new float[]{0f, 0.55f, 1f},
                 Shader.TileMode.CLAMP));
 
-        irisOuterRimPaint.setStrokeWidth(Math.max(1.5f, irisRadius * 0.082f));
+        irisOuterRimPaint.setStrokeWidth(Math.max(1.4f, irisRadius * 0.075f));
         ringPaint.setStrokeWidth(Math.max(1.2f, irisRadius * 0.055f));
-        lashRimPaint.setStrokeWidth(Math.max(2.0f, irisRadius * 0.095f));
+        lashRimPaint.setStrokeWidth(Math.max(1.4f, irisRadius * 0.06f));
 
         buildTomoePath(irisRadius);
 
@@ -254,12 +263,12 @@ public class SharinganWallpaperView extends View {
             out.quadTo(ox + 0.324f * imgW, oy + 0.454f * imgH, x0, y0);
             out.close();
         } else {
-            float x0 = ox + 0.464f * imgW, y0 = oy + 0.420f * imgH;
+            float x0 = ox + 0.471f * imgW, y0 = oy + 0.420f * imgH;
             out.moveTo(x0, y0);
-            out.quadTo(ox + 0.492f * imgW, oy + 0.386f * imgH, ox + 0.518f * imgW, oy + 0.378f * imgH);
-            out.quadTo(ox + 0.539f * imgW, oy + 0.381f * imgH, ox + 0.550f * imgW, oy + 0.399f * imgH);
+            out.quadTo(ox + 0.495f * imgW, oy + 0.391f * imgH, ox + 0.518f * imgW, oy + 0.382f * imgH);
+            out.quadTo(ox + 0.539f * imgW, oy + 0.384f * imgH, ox + 0.549f * imgW, oy + 0.400f * imgH);
             out.quadTo(ox + 0.538f * imgW, oy + 0.431f * imgH, ox + 0.514f * imgW, oy + 0.437f * imgH);
-            out.quadTo(ox + 0.486f * imgW, oy + 0.436f * imgH, ox + 0.466f * imgW, oy + 0.431f * imgH);
+            out.quadTo(ox + 0.489f * imgW, oy + 0.435f * imgH, x0, y0);
             out.close();
         }
         out.computeBounds(bounds, true);
@@ -387,10 +396,10 @@ public class SharinganWallpaperView extends View {
         }
 
         if (irisRadius > 0f) {
-            drawEye(canvas, leftEyeClip, leftSocketBounds,
+            drawEye(canvas, leftEyeClip, leftSocketBounds, leftScleraPaint,
                     leftCx + curLeftDx, leftCy + curLeftDy,
                     LEFT_IRIS_SCALE_X, LEFT_IRIS_SCALE_Y, false);
-            drawEye(canvas, rightEyeClip, rightSocketBounds,
+            drawEye(canvas, rightEyeClip, rightSocketBounds, rightScleraPaint,
                     rightCx + curRightDx, rightCy + curRightDy,
                     1f, 1f, true);
         }
@@ -399,31 +408,22 @@ public class SharinganWallpaperView extends View {
         canvas.drawRect(0f, getHeight() * 0.65f, getWidth(), getHeight(), bottomScrimPaint);
     }
 
-    private void drawEye(Canvas canvas, Path eyeClip, RectF bounds, float cx, float cy,
-                         float irisScaleX, float irisScaleY, boolean drawHairOver) {
-        // Soft luminous crimson aura around socket that dims smoothly while blinking
+    private void drawEye(Canvas canvas, Path eyeClip, RectF bounds, Paint socketScleraPaint,
+                         float cx, float cy, float irisScaleX, float irisScaleY, boolean drawHairOver) {
         float openFraction = Math.max(0f, 1f - blinkCloseFraction);
-        if (openFraction > 0.02f) {
-            canvas.save();
-            canvas.translate(cx, cy);
-            canvas.scale(irisScaleX, irisScaleY);
-            outerGlowPaint.setAlpha((int) ((165 + 75 * wakePulseAlpha) * openFraction));
-            canvas.drawCircle(0f, 0f, irisRadius * 2.15f, outerGlowPaint);
-            canvas.restore();
-        }
 
         canvas.save();
         canvas.clipPath(eyeClip);
 
-        // Uniform clean sclera base so iris never shows seams when sliding left/right
-        canvas.drawRect(bounds, scleraPaint);
+        // Shaded radial sclera melts into inner tear-duct & outer corner shadows seamlessly
+        canvas.drawRect(bounds, socketScleraPaint);
 
         // Crimson Sharingan bloom + spinning iris
         canvas.save();
         canvas.translate(cx, cy);
         canvas.scale(irisScaleX, irisScaleY);
-        redAuraPaint.setAlpha((int) (220 + 35 * wakePulseAlpha));
-        canvas.drawCircle(0f, 0f, irisRadius * 1.75f, redAuraPaint);
+        redAuraPaint.setAlpha((int) (235 + 20 * wakePulseAlpha));
+        canvas.drawCircle(0f, 0f, irisRadius * 1.85f, redAuraPaint);
 
         canvas.drawCircle(0f, 0f, irisRadius, irisPaint);
         canvas.drawCircle(0f, 0f, irisRadius - irisOuterRimPaint.getStrokeWidth() * 0.5f, irisOuterRimPaint);
@@ -461,8 +461,15 @@ public class SharinganWallpaperView extends View {
         }
         canvas.restore();
 
-        // Crisp lash border stroke on the outside edge of eye socket
-        canvas.drawPath(eyeClip, lashRimPaint);
+        // Soft luminous crimson aura spilling gently across iris, lashes, and upper shadow
+        if (openFraction > 0.02f) {
+            canvas.save();
+            canvas.translate(cx, cy);
+            canvas.scale(irisScaleX, irisScaleY);
+            outerGlowPaint.setAlpha((int) ((135 + 85 * wakePulseAlpha) * openFraction));
+            canvas.drawCircle(0f, 0f, irisRadius * 2.25f, outerGlowPaint);
+            canvas.restore();
+        }
     }
 }
 

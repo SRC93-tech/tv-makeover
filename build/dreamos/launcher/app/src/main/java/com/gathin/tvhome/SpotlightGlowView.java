@@ -4,17 +4,18 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.RadialGradient;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.util.AttributeSet;
 import android.view.View;
 
 /**
- * Soft pure-white radial spotlight glow that tracks the focused icon.
- * Pre-renders a single lightweight hardware-cached bitmap so scrolling/gliding costs one texture draw.
+ * Wide, ultra-soft pure-white radial spotlight glow that glides behind the focused app icon.
+ * Uses a smooth Gaussian falloff that decays seamlessly to zero so no hard oval rim ever appears.
  */
 public class SpotlightGlowView extends View {
+
+    /** Normalized Y center matching the focused icon's vertical center. */
+    public static final float FOCAL_Y = 0.50f;
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final RectF dst = new RectF();
@@ -27,18 +28,31 @@ public class SpotlightGlowView extends View {
     }
 
     private void buildTexture() {
-        int w = 240, h = 160;
+        int w = 256, h = 180;
         mask = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(mask);
-        // Clean pure-white radial spotlight halo behind the focused white app logo
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setShader(new RadialGradient(
-                w * 0.5f, h * 0.5f, w * 0.49f,
-                new int[]{0x70FFFFFF, 0x3CFFFFFF, 0x14FFFFFF, 0x00FFFFFF},
-                new float[]{0.0f, 0.30f, 0.64f, 1.0f},
-                Shader.TileMode.CLAMP));
-        c.scale(1f, (float) h / w);
-        c.drawCircle(w * 0.5f, w * 0.5f, w * 0.49f, p);
+        int[] pixels = new int[w * h];
+
+        double k = 2.6;
+        double floor = Math.exp(-k);
+        double norm = 1.0 - floor;
+        double peakAlpha = 0.16;
+
+        for (int y = 0; y < h; y++) {
+            double dy = (y / (double) (h - 1) - 0.5) * 2.0;
+            double dy2 = dy * dy;
+            int rowOffset = y * w;
+            for (int x = 0; x < w; x++) {
+                double dx = (x / (double) (w - 1) - 0.5) * 2.0;
+                double r2 = dx * dx + dy2;
+                int a = 0;
+                if (r2 < 1.0) {
+                    double g = (Math.exp(-k * r2) - floor) / norm;
+                    a = (int) Math.round(peakAlpha * g * 255.0);
+                }
+                pixels[rowOffset + x] = (a << 24) | 0x00EAF4FF;
+            }
+        }
+        mask.setPixels(pixels, 0, w, 0, 0, w, h);
     }
 
     @Override

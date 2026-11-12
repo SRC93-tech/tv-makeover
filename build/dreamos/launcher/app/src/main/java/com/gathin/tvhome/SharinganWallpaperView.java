@@ -5,10 +5,14 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -46,6 +50,12 @@ public class SharinganWallpaperView extends View {
     private Bitmap bgBitmap;
     private final Matrix bgMatrix = new Matrix();
     private final Paint bgPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final Paint bgDimPaint = new Paint();
+    private final Paint flashlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Matrix flashMatrix = new Matrix();
+    private RadialGradient flashShader;
+    private float flashRx, flashRy;
+    private float flashX = -1f, flashY = -1f, flashAlpha = 0f;
 
     private final Paint bottomScrimPaint = new Paint();
     private final Paint leftScleraPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -67,12 +77,16 @@ public class SharinganWallpaperView extends View {
     private final Path rightEyeClip = new Path();
     private final Path blinkRectPath = new Path();
     private final Path singleTomoePath = new Path();
+    private final Path[] foregroundHairPaths = {
+            new Path(), new Path(), new Path(), new Path(), new Path(), new Path()
+    };
+    private final float[] foregroundHairWidths = new float[6];
+    private final int[] foregroundHairAlphas = {225, 225, 240, 175, 230, 215};
     private final RectF leftSocketBounds = new RectF();
     private final RectF rightSocketBounds = new RectF();
 
     private float leftCx, leftCy, rightCx, rightCy, irisRadius;
     private float maxGazeX, maxGazeY, softRadiusPx;
-    private float hairStartX, hairStartY, hairEndX, hairEndY;
 
     // Live animated state
     private float curLeftDx, curLeftDy, curRightDx, curRightDy;
@@ -112,6 +126,15 @@ public class SharinganWallpaperView extends View {
     }
 
     private void initPaints() {
+        // Cool rainy midnight-blue color grade matching the Instagram reel while preserving dark red accents
+        bgPaint.setColorFilter(new ColorMatrixColorFilter(new ColorMatrix(new float[]{
+                0.72f, -0.10f, 0.00f, 0f, 0f,
+                0.05f,  0.88f, 0.15f, 0f, 0f,
+                0.00f,  0.38f, 1.50f, 0f, 0f,
+                0.00f,  0.00f, 0.00f, 1f, 0f
+        })));
+        flashlightPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
+
         irisOuterRimPaint.setStyle(Paint.Style.STROKE);
         irisOuterRimPaint.setColor(0xD9450308);
 
@@ -136,7 +159,7 @@ public class SharinganWallpaperView extends View {
 
         hairStrandPaint.setStyle(Paint.Style.STROKE);
         hairStrandPaint.setStrokeCap(Paint.Cap.ROUND);
-        hairStrandPaint.setColor(0xE0040508);
+        hairStrandPaint.setColor(0xFF030407);
     }
 
     private void ensureBitmap(int w, int h) {
@@ -181,11 +204,7 @@ public class SharinganWallpaperView extends View {
         maxGazeY = MAX_GAZE_Y_N * imgH;
         softRadiusPx = Math.max(160f, w * 0.22f);
 
-        hairStartX = ox + 0.495f * imgW;
-        hairStartY = oy + 0.376f * imgH;
-        hairEndX = ox + 0.501f * imgW;
-        hairEndY = oy + 0.442f * imgH;
-        hairStrandPaint.setStrokeWidth(Math.max(1.8f, imgScale * 2.2f));
+        buildForegroundHairStrands(ox, oy, imgW, imgH, imgScale);
 
         buildEyeSocketClip(leftEyeClip, leftSocketBounds, ox, oy, imgW, imgH, true);
         buildEyeSocketClip(rightEyeClip, rightSocketBounds, ox, oy, imgW, imgH, false);
@@ -193,7 +212,7 @@ public class SharinganWallpaperView extends View {
         leftScleraPaint.setShader(new RadialGradient(
                 leftSocketBounds.centerX(), leftSocketBounds.centerY() + leftSocketBounds.height() * 0.08f,
                 Math.max(10f, leftSocketBounds.width() * 0.56f),
-                new int[]{0xFF3A3D44, 0xFF272A30, 0xFF101216},
+                new int[]{0xFF2F3F5E, 0xFF1B263B, 0xFF0A0E18},
                 new float[]{0.0f, 0.55f, 1.0f},
                 Shader.TileMode.CLAMP));
 
@@ -201,9 +220,24 @@ public class SharinganWallpaperView extends View {
                 rightSocketBounds.centerX() + rightSocketBounds.width() * 0.08f,
                 rightSocketBounds.centerY() + rightSocketBounds.height() * 0.05f,
                 Math.max(10f, rightSocketBounds.width() * 0.52f),
-                new int[]{0xFF40444C, 0xFF282B31, 0xFF101216},
+                new int[]{0xFF334464, 0xFF1C273D, 0xFF0A0E18},
                 new float[]{0.0f, 0.52f, 1.0f},
                 Shader.TileMode.CLAMP));
+
+        bgDimPaint.setShader(new LinearGradient(
+                0f, 0f, 0f, h,
+                new int[]{0x3C030917, 0x46040D20, 0x56051026},
+                new float[]{0f, 0.55f, 1f},
+                Shader.TileMode.CLAMP));
+
+        flashRx = Math.max(w * 0.25f, 440f);
+        flashRy = Math.max(h * 0.27f, 290f);
+        flashShader = new RadialGradient(
+                0f, 0f, 1f,
+                new int[]{0x70E0F2FF, 0x44A8D2FF, 0x1D6BA2E6, 0x073A6BA8, 0x00000000},
+                new float[]{0f, 0.28f, 0.56f, 0.80f, 1f},
+                Shader.TileMode.CLAMP);
+        flashlightPaint.setShader(flashShader);
 
         eyeShadowPaint.setShader(new LinearGradient(
                 0f, Math.min(leftSocketBounds.top, rightSocketBounds.top),
@@ -249,6 +283,25 @@ public class SharinganWallpaperView extends View {
             curRightDx = targetRightDx;
             curRightDy = targetRightDy;
         }
+    }
+
+    private void buildForegroundHairStrands(float ox, float oy, float imgW, float imgH, float imgScale) {
+        // Exact foreground wet bangs crossing over eyes/glow in itachi_hero_bg.jpg so strands never truncate
+        setHairStrand(0, ox, oy, imgW, imgH, imgScale, 0.3860f, 0.390f, 0.3812f, 0.442f, 0.3762f, 0.482f, 3.2f);
+        setHairStrand(1, ox, oy, imgW, imgH, imgScale, 0.4785f, 0.358f, 0.4810f, 0.415f, 0.4833f, 0.472f, 3.4f);
+        setHairStrand(2, ox, oy, imgW, imgH, imgScale, 0.4918f, 0.356f, 0.4952f, 0.415f, 0.4990f, 0.472f, 4.4f);
+        setHairStrand(3, ox, oy, imgW, imgH, imgScale, 0.5018f, 0.365f, 0.5038f, 0.415f, 0.5055f, 0.460f, 1.9f);
+        setHairStrand(4, ox, oy, imgW, imgH, imgScale, 0.5290f, 0.352f, 0.5326f, 0.412f, 0.5352f, 0.468f, 4.0f);
+        setHairStrand(5, ox, oy, imgW, imgH, imgScale, 0.5405f, 0.356f, 0.5425f, 0.412f, 0.5440f, 0.468f, 2.8f);
+    }
+
+    private void setHairStrand(int idx, float ox, float oy, float imgW, float imgH, float imgScale,
+                               float x0n, float y0n, float xcn, float ycn, float x1n, float y1n, float baseWidth) {
+        Path p = foregroundHairPaths[idx];
+        p.reset();
+        p.moveTo(ox + x0n * imgW, oy + y0n * imgH);
+        p.quadTo(ox + xcn * imgW, oy + ycn * imgH, ox + x1n * imgW, oy + y1n * imgH);
+        foregroundHairWidths[idx] = Math.max(1.4f, imgScale * baseWidth);
     }
 
     private static void buildEyeSocketClip(Path out, RectF bounds, float ox, float oy,
@@ -313,6 +366,19 @@ public class SharinganWallpaperView extends View {
             bgBitmap.recycle();
             bgBitmap = null;
         }
+    }
+
+    /** Updates the wide front-beaming flashlight pool illuminating the wallpaper behind the focused app. */
+    public void setFlashlight(float screenX, float screenY, float alpha) {
+        float clamped = Math.max(0f, Math.min(1f, alpha));
+        if (Math.abs(flashX - screenX) < 0.5f && Math.abs(flashY - screenY) < 0.5f
+                && Math.abs(flashAlpha - clamped) < 0.005f) {
+            return;
+        }
+        flashX = screenX;
+        flashY = screenY;
+        flashAlpha = clamped;
+        invalidate();
     }
 
     /** Moves Itachi's gaze smoothly toward the screen-space center of the currently focused UI element. */
@@ -391,6 +457,18 @@ public class SharinganWallpaperView extends View {
     protected void onDraw(Canvas canvas) {
         if (bgBitmap != null && !bgBitmap.isRecycled()) {
             canvas.drawBitmap(bgBitmap, bgMatrix, bgPaint);
+            // Darken only the hero backdrop (preserving deep night contrast) while Sharingan eyes stay bright above
+            canvas.drawRect(0f, 0f, getWidth(), getHeight(), bgDimPaint);
+            // Front-beaming flashlight pool illuminating the backdrop behind the selected app
+            if (flashAlpha > 0.01f && flashShader != null && flashRx > 0f && flashRy > 0f) {
+                flashMatrix.reset();
+                flashMatrix.setScale(flashRx, flashRy);
+                flashMatrix.postTranslate(flashX, flashY);
+                flashShader.setLocalMatrix(flashMatrix);
+                flashlightPaint.setAlpha(Math.round(flashAlpha * 255f));
+                canvas.drawOval(flashX - flashRx, flashY - flashRy,
+                        flashX + flashRx, flashY + flashRy, flashlightPaint);
+            }
         } else {
             canvas.drawColor(0xFF04070D);
         }
@@ -398,10 +476,17 @@ public class SharinganWallpaperView extends View {
         if (irisRadius > 0f) {
             drawEye(canvas, leftEyeClip, leftSocketBounds, leftScleraPaint,
                     leftCx + curLeftDx, leftCy + curLeftDy,
-                    LEFT_IRIS_SCALE_X, LEFT_IRIS_SCALE_Y, false);
+                    LEFT_IRIS_SCALE_X, LEFT_IRIS_SCALE_Y);
             drawEye(canvas, rightEyeClip, rightSocketBounds, rightScleraPaint,
                     rightCx + curRightDx, rightCy + curRightDy,
-                    1f, 1f, true);
+                    1f, 1f);
+
+            // Foreground wet hair bangs sit in front of both eyes & crimson glow so strands never truncate
+            for (int i = 0; i < foregroundHairPaths.length; i++) {
+                hairStrandPaint.setAlpha(foregroundHairAlphas[i]);
+                hairStrandPaint.setStrokeWidth(foregroundHairWidths[i]);
+                canvas.drawPath(foregroundHairPaths[i], hairStrandPaint);
+            }
         }
 
         // Bottom dark atmospheric scrim keeps white logo icons high-contrast
@@ -409,7 +494,7 @@ public class SharinganWallpaperView extends View {
     }
 
     private void drawEye(Canvas canvas, Path eyeClip, RectF bounds, Paint socketScleraPaint,
-                         float cx, float cy, float irisScaleX, float irisScaleY, boolean drawHairOver) {
+                         float cx, float cy, float irisScaleX, float irisScaleY) {
         float openFraction = Math.max(0f, 1f - blinkCloseFraction);
 
         canvas.save();
@@ -442,11 +527,6 @@ public class SharinganWallpaperView extends View {
         canvas.drawCircle(-irisRadius * 0.34f, -irisRadius * 0.34f, Math.max(1.8f, irisRadius * 0.12f), catchlightPaint);
         canvas.drawCircle(irisRadius * 0.26f, irisRadius * 0.30f, Math.max(1.0f, irisRadius * 0.06f), catchlightPaint);
         canvas.restore();
-
-        // Fine wet foreground hair strand crossing inner sclera of the right eye
-        if (drawHairOver) {
-            canvas.drawLine(hairStartX, hairStartY, hairEndX, hairEndY, hairStrandPaint);
-        }
 
         // Subtle inner upper-eyelid shadow for anime depth
         canvas.drawRect(bounds, eyeShadowPaint);

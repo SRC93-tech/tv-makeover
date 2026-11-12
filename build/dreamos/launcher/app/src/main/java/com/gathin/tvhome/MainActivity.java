@@ -664,6 +664,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     spotlightScrollShiftY -= dy;
                     spotlight.setTranslationX(spotlight.getTranslationX() - dx);
                     spotlight.setTranslationY(spotlight.getTranslationY() - dy);
+                    syncWallpaperFlashlight();
                 }
             }
         });
@@ -712,6 +713,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                             .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY));
                     s.setMinimumVisibleChange(1f);
                 }
+                spotlightSpringX.addUpdateListener((anim, value, velocity) -> syncWallpaperFlashlight());
+                spotlightSpringY.addUpdateListener((anim, value, velocity) -> syncWallpaperFlashlight());
             } else {
                 spotlight.setVisibility(View.GONE);
             }
@@ -725,11 +728,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             open(systemIntent(Settings.ACTION_WIFI_SETTINGS));
             return true;
         });
-        // The glass is drawn in code (GlassDrawable blurs its edge once); focused, the button turns white.
-        android.graphics.drawable.StateListDrawable settingsBg = new android.graphics.drawable.StateListDrawable();
-        settingsBg.addState(new int[]{android.R.attr.state_focused}, getDrawable(R.drawable.glass_button_focused));
-        settingsBg.addState(new int[0], new GlassDrawable(density, 17.5f * density));
-        btnSettings.setBackground(settingsBg);
+        // Use the same dark frosted capsule glass (pill_bg) across all top bar pills including Settings.
+        btnSettings.setBackgroundResource(R.drawable.pill_bg);
         btnSettings.setOnClickListener(v -> showSettingsMenu());
         btnReorder = findViewById(R.id.btnReorder);
         btnReorder.setOnClickListener(v -> toggleReorder());
@@ -1658,16 +1658,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             sharinganWallpaper.lookAt(centerX, centerY + targetLiftY);
         }
         if (spotlightGlow && spotlight != null && !reordering) {
-            float sw = Math.max(248f * density, card.getWidth() * 2.15f);
-            float sh = Math.max(168f * density, card.getHeight() * 1.68f);
+            float sw = Math.max(460f * density, card.getWidth() * 4.2f);
+            float sh = Math.max(310f * density, card.getHeight() * 3.0f);
             ViewGroup.LayoutParams slp = spotlight.getLayoutParams();
             if (slp.width != (int) sw || slp.height != (int) sh) {
                 slp.width = (int) sw;
                 slp.height = (int) sh;
                 spotlight.setLayoutParams(slp);
             }
-            float sx = centerX - sw / 2f;
-            float sy = centerY + targetLiftY - sh / 2f;
+            float sx = centerX - sw * 0.5f;
+            float sy = centerY + targetLiftY - sh * SpotlightGlowView.FOCAL_Y;
             spotlightTargetX = sx;
             spotlightTargetY = sy;
             if (!spotlightShown) {
@@ -1675,14 +1675,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (spotlightSpringY != null) spotlightSpringY.cancel();
                 spotlight.setTranslationX(sx);
                 spotlight.setTranslationY(sy);
-                if (animations) spotlight.animate().alpha(1f).setDuration(reducedMotion ? 110 : 180).start();
-                else spotlight.setAlpha(1f);
                 spotlightShown = true;
+                if (animations) {
+                    spotlight.animate().alpha(1f).setDuration(reducedMotion ? 110 : 180)
+                            .setUpdateListener(a -> syncWallpaperFlashlight()).start();
+                } else {
+                    spotlight.setAlpha(1f);
+                }
+                syncWallpaperFlashlight();
             } else if (!animations) {
                 if (spotlightSpringX != null) spotlightSpringX.cancel();
                 if (spotlightSpringY != null) spotlightSpringY.cancel();
                 spotlight.setTranslationX(sx);
                 spotlight.setTranslationY(sy);
+                syncWallpaperFlashlight();
             } else {
                 if (spotlightSpringX != null) spotlightSpringX.animateToFinalPosition(sx - spotlightScrollShiftX);
                 if (spotlightSpringY != null) spotlightSpringY.animateToFinalPosition(sy - spotlightScrollShiftY);
@@ -2074,8 +2080,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         spotlightScrollShiftX = 0f;
         spotlightScrollShiftY = 0f;
         spotlight.animate().cancel();
-        if (animations) spotlight.animate().alpha(0f).setDuration(180).start();
-        else spotlight.setAlpha(0f);
+        if (animations) {
+            spotlight.animate().alpha(0f).setDuration(180)
+                    .setUpdateListener(a -> syncWallpaperFlashlight()).start();
+        } else {
+            spotlight.setAlpha(0f);
+            syncWallpaperFlashlight();
+        }
+    }
+
+    private void syncWallpaperFlashlight() {
+        if (!heroEyeWallpaper || sharinganWallpaper == null || spotlight == null) return;
+        ViewGroup.LayoutParams slp = spotlight.getLayoutParams();
+        float sw = slp != null && slp.width > 0 ? slp.width : spotlight.getWidth();
+        float sh = slp != null && slp.height > 0 ? slp.height : spotlight.getHeight();
+        float cx = spotlight.getTranslationX() + sw * 0.5f;
+        float cy = spotlight.getTranslationY() + sh * SpotlightGlowView.FOCAL_Y;
+        sharinganWallpaper.setFlashlight(cx, cy, spotlightShown ? spotlight.getAlpha() : 0f);
     }
 
     private void lookAtView(View target) {

@@ -39,6 +39,10 @@ final class WhiteLogoHelper {
         BUNDLED_LOGOS.put("com.internet.tvbrowser", R.drawable.logo_browser);
         BUNDLED_LOGOS.put("org.videolan.vlc", R.drawable.logo_vlc);
         BUNDLED_LOGOS.put("com.mediatek.wwtv.mediaplayer", R.drawable.logo_mediaplayer);
+        BUNDLED_LOGOS.put("com.mediatek.wwtv.tvcenter", R.drawable.logo_livetv);
+        BUNDLED_LOGOS.put("com.mediatek.tvinput", R.drawable.logo_livetv);
+        BUNDLED_LOGOS.put("com.google.android.tv", R.drawable.logo_livetv);
+        BUNDLED_LOGOS.put("com.sony.dtv.tvx", R.drawable.logo_livetv);
         BUNDLED_LOGOS.put("com.esaba.downloader", R.drawable.logo_downloader);
         BUNDLED_LOGOS.put("org.localsend.localsend_app", R.drawable.logo_localsend);
         BUNDLED_LOGOS.put("app.netmirror.newtv", R.drawable.logo_netmirror);
@@ -61,10 +65,13 @@ final class WhiteLogoHelper {
         Drawable source = fallbackIcon != null ? fallbackIcon : fallbackBanner;
         if (source == null) return null;
 
-        // API 26+: adaptive icon foreground contains the pure transparent-background emblem!
+        // API 26+: adaptive icon foreground contains the pure transparent-background emblem,
+        // though some legacy/TV apps wrap an opaque fill inside foreground; strip corners if opaque.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && source instanceof AdaptiveIconDrawable) {
             Drawable fg = ((AdaptiveIconDrawable) source).getForeground();
             if (fg != null) {
+                Drawable strippedFg = stripBackgroundAndWhiten(ctx, fg, 96);
+                if (strippedFg != null) return strippedFg;
                 Drawable white = tintSolidWhite(ctx, fg, 96);
                 if (white != null) return white;
             }

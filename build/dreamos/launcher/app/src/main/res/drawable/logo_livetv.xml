@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Live TV sleek monochrome antenna + hollow TV bezel + play glyph -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M16.5,6.8 L24.0,14.2 L31.5,6.8" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.8"
+        android:strokeLineJoin="round"
+        android:pathData="M10.5,14.5 L37.5,14.5 C39.4,14.5 41.0,16.1 41.0,18.0 L41.0,35.5 C41.0,37.4 39.4,39.0 37.5,39.0 L10.5,39.0 C8.6,39.0 7.0,37.4 7.0,35.5 L7.0,18.0 C7.0,16.1 8.6,14.5 10.5,14.5 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M20.2,21.2 L30.2,26.8 L20.2,32.4 Z" />
+</vector>
+

@@ -39,10 +39,11 @@
          gives it its glass background (GlassDrawable). Give it a contentDescription, since there is no text. -->
     <style name="GlassButton">
         <item name="android:layout_width">42dp</item>
-        <item name="android:layout_height">41dp</item>
+        <item name="android:layout_height">42dp</item>
         <item name="android:layout_marginStart">10dp</item>
         <item name="android:paddingStart">11.5dp</item>
-        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingEnd">11.5dp</item>
+        <item name="android:gravity">center</item>
         <item name="android:drawableTint">@drawable/pill_text</item>
         <item name="android:focusable">true</item>
         <item name="android:clickable">true</item>

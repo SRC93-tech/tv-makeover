@@ -757,6 +757,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                         .setDuration(160).start());
             }
         }
+        if (heroEyeWallpaper) {
+            for (View button : new View[]{btnInputs, btnWifi, btnReorder, btnSettings}) {
+                addFocusAction(button, () -> lookAtView(button));
+            }
+        }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
 
         // Hide the glass & spotlight when focus leaves tiles, and aim Sharingan gaze at focused view.
@@ -767,8 +772,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 hideGlass();
                 hideSpotlight();
             }
-            if (heroEyeWallpaper && sharinganWallpaper != null && newF != null && newF.isShown()
-                    && newF.getWidth() > 0 && newF.getHeight() > 0) {
+            if (heroEyeWallpaper && sharinganWallpaper != null && newF != null && newF.isShown()) {
                 lookAtView(newF);
             }
         });
@@ -864,7 +868,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         wallpaperPlayer.start();
         if (clockRefresh != null) clockRefresh.start();
         if (rollingSeconds != null && rollingSeconds.getVisibility() == View.VISIBLE) rollingSeconds.start();
-        if (heroEyeWallpaper && sharinganWallpaper != null) sharinganWallpaper.start();
+        if (heroEyeWallpaper && sharinganWallpaper != null) {
+            sharinganWallpaper.start();
+            root.post(() -> {
+                View f = getCurrentFocus();
+                if (f != null && f.isShown()) lookAtView(f);
+            });
+        }
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && diya != null) {
             diya.start();
@@ -2063,10 +2073,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void lookAtView(View target) {
         if (!heroEyeWallpaper || sharinganWallpaper == null || target == null) return;
+        if (target.getWidth() == 0 || target.getHeight() == 0) {
+            target.post(() -> {
+                if (target.isFocused() && target.isShown() && target.getWidth() > 0) lookAtView(target);
+            });
+            return;
+        }
         int[] targetLoc = new int[2];
         int[] wallLoc = new int[2];
-        target.getLocationInWindow(targetLoc);
-        sharinganWallpaper.getLocationInWindow(wallLoc);
+        target.getLocationOnScreen(targetLoc);
+        sharinganWallpaper.getLocationOnScreen(wallLoc);
         float cx = (targetLoc[0] - wallLoc[0]) + target.getWidth() * 0.5f;
         float cy = (targetLoc[1] - wallLoc[1]) + target.getHeight() * 0.5f;
         sharinganWallpaper.lookAt(cx, cy);
@@ -2950,8 +2966,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         popup.setOutsideTouchable(true);
         popup.setAnimationStyle(0);
         popup.setElevation(0f);
+        if (heroEyeWallpaper) {
+            panel.getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
+                if (newF != null && newF.isShown() && newF.getWindowToken() == panel.getWindowToken()) {
+                    lookAtView(newF);
+                }
+            });
+        }
         popup.setOnDismissListener(() -> {
             if (openPopup == popup) openPopup = null;
+            if (heroEyeWallpaper) {
+                root.post(() -> {
+                    View f = getCurrentFocus();
+                    if (f != null && f.isShown()) lookAtView(f);
+                });
+            }
         });
         openPopup = popup;
         return popup;
